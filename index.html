@@ -311,6 +311,17 @@ const SPR = {
     '....www..w..w.',
     '.....ww....w..',
     '......w.......']),
+  download: makeSprite([
+    '...w...',
+    '...w...',
+    '...w...',
+    'wwwwwww',
+    '.wwwww.',
+    '..www..',
+    '...w...',
+    '.......',
+    'wwwwwww',
+    'wwwwwww']),
   sndOff: makeSprite([
     '......w.......',
     '.....ww.......',
@@ -368,7 +379,8 @@ const FONT_SRC = {
   '*': '00000 10001 01010 00100 01010 10001 00000', '/': '00001 00010 00010 00100 01000 01000 10000',
   '<': '00010 00100 01000 10000 01000 00100 00010', '>': '01000 00100 00010 00001 00010 00100 01000',
   "'": '00100 00100 01000 00000 00000 00000 00000', '@': '00000 01010 11111 11111 01110 00100 00000',
-  '·': '00000 00000 00000 00100 00000 00000 00000'
+  '·': '00000 00000 00000 00100 00000 00000 00000',
+  '(': '00010 00100 01000 01000 01000 00100 00010', ')': '01000 00100 00010 00010 00010 00100 01000'
 };
 const FONT = {};
 for (const k in FONT_SRC) FONT[k] = FONT_SRC[k].split(' ').map(s => parseInt(s, 2));
@@ -856,6 +868,41 @@ const Music = {
   }
 };
 
+// ======================================================================
+//  Instalación como app (PWA)
+// ======================================================================
+// Chrome/Edge/Android: se guarda el evento beforeinstallprompt y nuestro botón abre el
+// diálogo nativo. iPhone/iPad (Safari) no tiene ese evento: se muestran los pasos.
+const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isInstalled = () => matchMedia('(display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui)').matches ||
+  navigator.standalone === true || document.referrer.startsWith('android-app://');
+let deferredPrompt = null, installed = isInstalled();
+let invite = false, helpOpen = false;          // invitación tras una partida / pasos para instalar a mano
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; });
+addEventListener('appinstalled', () => { installed = true; deferredPrompt = null; invite = helpOpen = false; });
+const canInstall = () => !installed && (!!deferredPrompt || IS_IOS || touchMode);
+const gamesPlayed = () => parseInt(store.get('vaquitasGames', '0'), 10) || 0;
+
+async function doInstall() {
+  invite = false;
+  if (!deferredPrompt) { helpOpen = true; return; }
+  const p = deferredPrompt;
+  deferredPrompt = null;              // el evento solo se puede usar una vez
+  try {
+    await p.prompt();
+    const r = await p.userChoice;
+    if (r && r.outcome === 'accepted') installed = true;
+  } catch { helpOpen = true; }
+}
+function laterInstall() {
+  invite = false;
+  store.set('vaquitasInviteAt', String(gamesPlayed() + 4));   // vuelve a preguntar en 4 partidas
+}
+function maybeInvite() {
+  const at = parseInt(store.get('vaquitasInviteAt', '0'), 10) || 0;
+  if (touchMode && canInstall() && gamesPlayed() >= 1 && gamesPlayed() >= at) invite = true;
+}
+
 // Qué pista corresponde al momento del juego
 function musicFor() {
   switch (state) {
@@ -1050,6 +1097,7 @@ function toTitle() {
   cows = makeCows();
   player.x = W / 2 - TRUCK_W / 2; player.dir = 1; player.inv = 0; player.triple = 0;
   hi = loadHi();
+  maybeInvite();
 }
 
 function startWave() {
@@ -1092,6 +1140,7 @@ function gameOver(reason) {
   gameOverReason = reason;
   newRecord = score > hiBefore && score > 0;
   if (score > hi) { hi = score; store.set(HI_KEY, String(hi)); }
+  store.set('vaquitasGames', String(gamesPlayed() + 1));
   banner = null;
   SFX.over();
 }
@@ -1127,6 +1176,7 @@ function startRaid() {
 }
 
 function requestStart() {
+  if (invite || helpOpen) return;
   if (state === 'title') newGame();
   else if (state === 'gameover' && stateTimer > 1) toTitle();
 }
@@ -1942,19 +1992,78 @@ function drawHUD() {
   }
 }
 
-// Inicio minimalista: logo, indicación para jugar y récord (si existe), centrados en el cielo
+// Botón de interfaz en el canvas (con ícono opcional)
+function uiBtn(label, icon = false) { return { label, icon, x: 0, y: 0, w: textWidth(label) + 12 + (icon ? 7 : 0), h: 13 }; }
+function drawUIButton(b, primary) {
+  const face = primary ? '#d03a33' : '#16307a', edge = primary ? '#6e1514' : '#06123a';
+  roundRect(b.x, b.y + 1.5, b.w, b.h, edge);
+  roundRect(b.x, b.y, b.w, b.h, '#050a1f');
+  roundRect(b.x + 0.5, b.y + 0.5, b.w - 1, b.h - 1, face);
+  ctx.fillStyle = primary ? '#ff8f86' : '#4b84ef';
+  ctx.fillRect(b.x + 1.5, b.y + 1, b.w - 3, 0.5);
+  let tx = b.x + 6;
+  if (b.icon) { drawSprite(SPR.download, tx, b.y + 4); tx += 7; }
+  drawTextShadow(b.label, tx, b.y + 3, PAL.w, 1, 'left', edge);
+}
+
+// Inicio minimalista: logo, indicación para jugar, récord (si existe) y botón de instalar
+function titleLayout() {
+  const logo = COMPACT ? LOGO_S : LOGO, sub = COMPACT ? SUBLOGO_S : SUBLOGO, gap = COMPACT ? 12 : 26;
+  const btn = canInstall() ? uiBtn(COMPACT ? 'INSTALAR' : 'INSTALAR APP', true) : null;
+  const recStep = COMPACT ? 12 : 16, btnGap = COMPACT ? 6 : 12;
+  const recH = hi > 0 ? recStep : 0;
+  const blockH = logo.lh + 4 + sub.lh + gap + 7 + recH + (btn ? btnGap + 13 : 0);
+  const L = { logo, sub };
+  // en celular el bloque se apoya sobre las pacas para dejar libre la luna
+  L.logoY = COMPACT ? SHIELD_Y - 6 - blockH : Math.round((TOP + SHIELD_Y) / 2 - blockH / 2 - 6);
+  L.subY = L.logoY + logo.lh + 4;
+  L.promptY = L.subY + sub.lh + gap;
+  L.recY = L.promptY + recStep;
+  if (btn) { btn.x = Math.round(W / 2 - btn.w / 2); btn.y = L.promptY + 7 + recH + btnGap; L.btn = btn; }
+  return L;
+}
 function drawTitle() {
-  const logo = COMPACT ? LOGO_S : LOGO, sub = COMPACT ? SUBLOGO_S : SUBLOGO, gap = COMPACT ? 18 : 26;
-  const blockH = logo.lh + 4 + sub.lh + gap + 7;
-  let y = Math.round((TOP + SHIELD_Y) / 2 - blockH / 2 - (COMPACT ? 0 : 6));
-  blitLogo(logo, Math.round((W - logo.lw) / 2), y);
-  y += logo.lh + 4;
-  blitLogo(sub, Math.round((W - sub.lw) / 2), y);
-  y += sub.lh + gap;
-  ctx.globalAlpha = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(clock * 3.2));   // respira en vez de parpadear
-  drawTextShadow(touchMode ? 'TOCA PARA JUGAR' : 'PRESIONA ENTER', W / 2, y, PAL.w, 1, 'center');
-  ctx.globalAlpha = 1;
-  if (hi > 0) drawText('RECORD ' + pad(hi), W / 2, y + 16, '#4f6299', 1, 'center');
+  const L = titleLayout();
+  blitLogo(L.logo, Math.round((W - L.logo.lw) / 2), L.logoY);
+  blitLogo(L.sub, Math.round((W - L.sub.lw) / 2), L.subY);
+  if (!invite && !helpOpen) {
+    ctx.globalAlpha = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(clock * 3.2));   // respira en vez de parpadear
+    drawTextShadow(touchMode ? 'TOCA PARA JUGAR' : 'PRESIONA ENTER', W / 2, L.promptY, PAL.w, 1, 'center');
+    ctx.globalAlpha = 1;
+  }
+  if (hi > 0) drawText('RECORD ' + pad(hi), W / 2, L.recY, '#4f6299', 1, 'center');
+  if (L.btn) drawUIButton(L.btn, false);
+}
+
+// Invitación a instalar (celular, después de jugar una partida)
+function inviteLayout() {
+  const maxW = W - panelM() * 2 - 10;
+  const head = wrapText('¿TE GUSTO?', 2, maxW);
+  const body = wrapText('INSTALALO PARA JUGAR A PANTALLA COMPLETA Y SIN INTERNET', 1, maxW);
+  const bI = uiBtn('INSTALAR', true), bL = uiBtn('AHORA NO');
+  const stack = bI.w + bL.w + 6 > maxW;
+  const textH = head.length * lineH(2) + 4 + body.length * lineH(1);
+  const total = textH + 8 + (stack ? 30 : 13);
+  const y0 = Math.round(CY - total / 2), by = y0 + textH + 8;
+  if (stack) { bI.x = Math.round(W / 2 - bI.w / 2); bI.y = by; bL.x = Math.round(W / 2 - bL.w / 2); bL.y = by + 17; }
+  else { const tw = bI.w + bL.w + 6; bI.x = Math.round(W / 2 - tw / 2); bL.x = bI.x + bI.w + 6; bI.y = bL.y = by; }
+  return { y0, total, head, body, bI, bL };
+}
+function drawInvite() {
+  const L = inviteLayout();
+  drawPanel(L.y0 - 9, L.y0 + L.total + 9);
+  let y = L.y0;
+  for (const l of L.head) { drawTextShadow(l, W / 2, y, PAL.y, 2, 'center'); y += lineH(2); }
+  y += 4;
+  for (const l of L.body) { drawTextShadow(l, W / 2, y, PAL.w, 1, 'center'); y += lineH(1); }
+  drawUIButton(L.bI, true);
+  drawUIButton(L.bL, false);
+}
+function drawInstallHelp() {
+  const steps = IS_IOS
+    ? ['1. TOCA COMPARTIR (EL CUADRO CON LA FLECHA HACIA ARRIBA)', "2. ELIGE 'AGREGAR A INICIO'"]
+    : ['1. ABRE EL MENU DEL NAVEGADOR (LOS 3 PUNTOS)', "2. ELIGE 'INSTALAR APP' O 'AGREGAR A PANTALLA DE INICIO'"];
+  drawPanelItems([['PARA INSTALAR', 2, PAL.y], ...steps.map(t => [t, 1, PAL.w]), ['TOCA PARA CERRAR', 1, '#7f95c9']]);
 }
 
 const panelM = () => COMPACT ? 4 : 14;
@@ -2085,6 +2194,8 @@ function render() {
   if (state === 'levelclear') drawLevelClear();
   if (state === 'gameover') drawGameOver();
   if (paused) drawPanelItems([['PAUSA', 2, PAL.w], [touchMode ? 'TOCA LA PANTALLA' : 'P PARA CONTINUAR', 1, '#9ccaff']]);
+  if (invite) drawInvite();
+  if (helpOpen) drawInstallHelp();
   ctx.restore();
   if (DECK_H) drawDeck();
 }
@@ -2101,6 +2212,12 @@ addEventListener('keydown', e => {
   const k = KEYMAP[e.code];
   if (k) { kb[k] = true; e.preventDefault(); }
   if (e.repeat) return;
+  if (helpOpen) { helpOpen = false; return; }
+  if (invite) {
+    if (e.code === 'Enter') doInstall();
+    else if (e.code === 'Escape') laterInstall();
+    return;
+  }
   if (e.code === 'Enter' || e.code === 'Space') requestStart();
   if (e.code === 'KeyP' || e.code === 'Escape') togglePause();
   if (e.code === 'KeyM') toggleMute();
@@ -2115,6 +2232,15 @@ function toggleMute() { AudioSys.setMuted(!AudioSys.muted); }
 
 const inside = (b, x, y, m = 0) => x >= b.x - m && x < b.x + b.w + m && y >= b.y - m && y < b.y + b.h + m;
 function zoneAt(vx, vy) {
+  const px = vx - OX;
+  if (helpOpen) return 'closehelp';
+  if (invite) {
+    const L = inviteLayout();
+    if (inside(L.bI, px, vy, 2)) return 'install';
+    if (inside(L.bL, px, vy, 2)) return 'later';
+    return 'modal';
+  }
+  if (state === 'title') { const T = titleLayout(); if (T.btn && inside(T.btn, px, vy, 3)) return 'install'; }
   if (DECK_H && vy >= H) {
     const [L, R, F] = deckBtns;
     if (vx >= F.x - 4) return 'fire';
@@ -2147,6 +2273,8 @@ cvs.addEventListener('pointerdown', e => {
   ptrs.set(e.pointerId, z);
   if (z === 'pause') togglePause();
   else if (z === 'mute') toggleMute();
+  else if (z === 'later') laterInstall();
+  else if (z === 'closehelp') helpOpen = false;
   else if (z === 'fire' || z === 'screen') { if (paused) paused = false; else requestStart(); }
   syncTouch();
 });
@@ -2157,7 +2285,11 @@ cvs.addEventListener('pointermove', e => {
   const z = zoneAt(...toView(e));     // permite deslizar el pulgar entre botones
   if (z === 'left' || z === 'right' || z === 'fire') { ptrs.set(e.pointerId, z); syncTouch(); }
 });
-const release = e => { ptrs.delete(e.pointerId); syncTouch(); };
+const release = e => {
+  if (e.type === 'pointerup' && ptrs.get(e.pointerId) === 'install' && zoneAt(...toView(e)) === 'install') doInstall();
+  ptrs.delete(e.pointerId);
+  syncTouch();
+};
 cvs.addEventListener('pointerup', release);
 cvs.addEventListener('pointercancel', release);
 cvs.addEventListener('lostpointercapture', release);
@@ -2244,6 +2376,9 @@ window.__vaquitas = {
   get internals() { return { player, abductors, cows, eshots, shots }; },
   sprites: SPR,
   get music() { return Music.track; },
+  get install() { return { installed, prompt: !!deferredPrompt, invite, helpOpen, can: canInstall(), games: gamesPlayed() }; },
+  openInvite: () => { invite = true; }, openHelp: () => { helpOpen = true; },
+  zone: (vx, vy) => zoneAt(vx, vy), titleBtn: () => titleLayout().btn,
   audioTest: () => {            // programa cada nota de cada pista para detectar errores
     AudioSys.init();
     if (!Music.out) { Music.out = AudioSys.ac.createGain(); Music.out.connect(AudioSys.master); }
