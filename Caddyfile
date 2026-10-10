@@ -1,0 +1,21 @@
+{
+	admin off
+}
+
+:{$PORT:8080} {
+	root * /srv
+	encode zstd gzip
+
+	# La página y el service worker siempre se revalidan para que las actualizaciones lleguen rápido
+	@fresh path / /index.html /sw.js /manifest.webmanifest
+	header @fresh Cache-Control "no-cache"
+
+	@manifest path *.webmanifest
+	header @manifest Content-Type "application/manifest+json"
+
+	# Necesario para vincular la app de Android (TWA) más adelante
+	@assetlinks path /.well-known/assetlinks.json
+	header @assetlinks Content-Type "application/json"
+
+	file_server
+}
