@@ -1002,10 +1002,7 @@ function update(dt) {
       form.t -= dt;
       if (form.t <= 0) { form.t = 0.25; form.frame ^= 1; }
       updateDivers(dt, true);
-      if (mother) {
-        mother.x += mother.dir * 42 * dt;
-        if (mother.x < -20 || mother.x > W + 4) mother = null;
-      }
+      if (mother) moveMother(dt);
       updateAbductions(dt, true);
       if (state === 'raid') updateCows(dt);
       break;
@@ -1144,7 +1141,7 @@ function killMother() {
   floater(String(pts), mother.x + 8, mother.y + 10, PAL.y, 1.6);
   burst(mother.x + 8, mother.y + 4, [PAL.m, PAL.c, PAL.y, PAL.w], 36, 80, 50);
   splats.push({ x: mother.x + 2, y: mother.y, t: 0.25 });
-  powerups.push({ x: mother.x + 5, y: mother.y + 6, vy: 38 * VD });
+  powerups.push({ x: clamp(mother.x + 5, 0, W - 6), y: mother.y + 6, vy: 38 * VD, t: 0, state: 'fall', life: 0 });
   mother = null;
   shake = 3;
   SFX.motherHit();
@@ -1451,29 +1448,56 @@ function updateMother(dt) {
     if (motherT <= 0) {
       motherT = rand(16, 26);
       if (aliveCount() >= 5) {
+        // entra desde el borde real de la pantalla (en PC hay paisaje a los lados de la zona de juego)
         const d = Math.random() < 0.5 ? 1 : -1;
-        mother = { x: d > 0 ? -16 : W, y: 15, dir: d, ft: 0, frame: 0 };
+        mother = { x: d > 0 ? -OX - 18 : VW - OX + 2, y: 15, dir: d, ft: 0, frame: 0, trail: 0 };
       }
     }
     return;
   }
+  moveMother(dt);
+}
+
+function moveMother(dt) {
   mother.x += mother.dir * 42 * dt;
   mother.y = 15 + Math.sin(gt * 4) * 2;
   mother.ft += dt;
   if (mother.ft > 0.12) { mother.ft = 0; mother.frame ^= 1; SFX.mother(mother.frame); }
-  if (mother.x < -20 || mother.x > W + 4) mother = null;
+  mother.trail -= dt;
+  if (mother.trail <= 0 && particles.length < 600) {        // estela del motor
+    mother.trail = 0.04;
+    particles.push({ x: mother.x + (mother.dir > 0 ? 0 : 16), y: mother.y + rand(2.5, 5), vx: -mother.dir * rand(8, 20), vy: rand(-3, 3),
+                     life: rand(0.3, 0.6), c: pick([PAL.m, PAL.n, PAL.c]), g: 0, z: 0.5 });
+  }
+  if (mother.x < -OX - 20 || mother.x > VW - OX + 4) mother = null;
 }
 
+// Cartón de leche triple: brota de la nave, cae meciéndose, se queda un rato en el pasto
+// (todavía se puede recoger), parpadea antes de irse y se desvanece con destellos.
 function updatePowerups(dt) {
   for (const p of powerups) {
-    p.y += p.vy * dt;
-    if (overlap(p.x, p.y, 6, 8, player.x, player.y, TRUCK_W, 11)) {
+    p.t += dt;
+    if (p.state === 'fall') {
+      p.y += p.vy * dt;
+      p.x = clamp(p.x + Math.sin(p.t * 3) * 6 * dt, 0, W - 6);
+      if (p.y >= GROUND_Y - 8) {
+        p.y = GROUND_Y - 8; p.state = 'ground'; p.life = 3;
+        burst(p.x + 3, GROUND_Y, ['#4cc35a', PAL.w], 6, 25, 80);
+      }
+    } else if (p.state === 'ground') {
+      p.life -= dt;
+      if (p.life <= 0) { p.state = 'fade'; p.life = 0.35; }
+    } else {
+      p.life -= dt;
+      if (p.life <= 0) { p.dead = true; burst(p.x + 3, p.y + 4, [PAL.w, PAL.c], 8, 30, -20); continue; }
+    }
+    if (p.state !== 'fade' && overlap(p.x, p.y, 6, 8, player.x, player.y, TRUCK_W, 11)) {
       p.dead = true;
       player.triple = DF.triple;
       floater('¡LECHE TRIPLE!', player.x + TRUCK_W / 2, player.y - 8, PAL.c, 1.6);
       burst(p.x + 3, p.y + 4, [PAL.w, PAL.b, PAL.c], 18, 50, 40);
       SFX.power();
-    } else if (p.y > GROUND_Y) p.dead = true;
+    }
   }
   powerups = powerups.filter(p => !p.dead);
 }
@@ -1563,6 +1587,31 @@ function drawCow(c) {
   if (c.target && Math.floor(clock * 6) % 2) drawText('!', Math.round(c.x + 4), Math.round(c.y) - 9, PAL.y);
 }
 
+const easeOutBack = x => 1 + 2.70158 * (x - 1) ** 3 + 1.70158 * (x - 1) ** 2;
+function drawPowerup(p) {
+  let alpha = 1, s = p.t < 0.3 ? easeOutBack(p.t / 0.3) : 1;   // brota con rebote
+  if (p.state === 'ground' && p.life < 0.9 && Math.floor(clock * 10) % 2) alpha = 0.35;
+  if (p.state === 'fade') { const k = p.life / 0.35; alpha = k; s = 1 + (1 - k) * 0.6; }
+  const cx = p.x + 3, cy = p.y + 4, r = 5 + Math.sin(clock * 6) * 0.8;
+  ctx.globalAlpha = alpha * 0.22;                 // halo
+  ctx.fillStyle = PAL.c;
+  ctx.fillRect(snap(cx - r), snap(cy - r * 0.6), snap(r * 2), snap(r * 1.2));
+  ctx.fillRect(snap(cx - r * 0.6), snap(cy - r), snap(r * 1.2), snap(r * 2));
+  ctx.globalAlpha = alpha;
+  ctx.save();
+  ctx.translate(snap(cx), snap(cy));
+  if (p.state === 'fall') ctx.rotate(Math.sin(p.t * 3) * 0.18);
+  ctx.scale(s, s);
+  ctx.drawImage(SPR.carton, -3, -4, 6, 8);
+  ctx.restore();
+  if (Math.floor(clock * 4 + p.x) % 3 === 0) {    // destello
+    ctx.fillStyle = PAL.w;
+    ctx.fillRect(snap(cx + 2.5), snap(cy - 4.5), 0.5, 1.5);
+    ctx.fillRect(snap(cx + 2), snap(cy - 4), 1.5, 0.5);
+  }
+  ctx.globalAlpha = 1;
+}
+
 // Nave rotada según su dirección de vuelo (para las que atacan en picada)
 function drawUfoTilted(img, x, y, ang) {
   ctx.save();
@@ -1609,7 +1658,7 @@ function drawWorld() {
   }
   for (const s of splats) drawSprite(SPR.splash, s.x, s.y);
   if (mother) drawSprite(SPR.mother[mother.frame], mother.x, mother.y);
-  for (const p of powerups) if (Math.floor(clock * 8) % 4) drawSprite(SPR.carton, p.x, p.y);
+  for (const p of powerups) drawPowerup(p);
 
   const showPlayer = state !== 'dying' && !truckLost &&
     !(player.inv > 0 && Math.floor(clock * 12) % 2);
@@ -1975,6 +2024,9 @@ window.__vaquitas = {
   clearWave: () => { inv.forEach(i => (i.alive = false)); },
   get internals() { return { player, abductors, cows, eshots, shots }; },
   sprites: SPR,
+  get mother() { return mother && { x: mother.x, dir: mother.dir }; },
+  get powerups() { return powerups.map(p => ({ state: p.state, y: Math.round(p.y), life: +p.life.toFixed(2) })); },
+  spawnMother: () => { motherT = 0; }, hitMother: () => { if (mother) killMother(); },
   step: sec => { for (let k = 0; k < sec * 60; k++) update(STEP); render(); }
 };
 

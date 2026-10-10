@@ -1,6 +1,6 @@
 // Service worker: deja el juego jugable sin conexión.
 // Sube VERSION cada vez que publiques cambios para que los jugadores reciban la versión nueva.
-const VERSION = 'vaquitas-v2';
+const VERSION = 'vaquitas-v3';
 const CORE = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', e => {
