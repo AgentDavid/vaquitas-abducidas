@@ -83,7 +83,8 @@ const BAYER = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]];
 // pantallas anchas; los costados se llenan con paisaje). DECK_H: controles táctiles.
 let VW = 224, VH = 256, W = 224, H = 256, OX = 0, DECK_H = 0, Sint = RS;
 let GROUND_Y, PLAYER_Y, SHIELD_Y, COW_Y, CY, TY;
-let COLG = 16, ROWG = 14, VD = 1;
+let COLG = 16, ROWG = 14, VD = 1, HS = 1;
+let COLS = 8, ROWS = 5, FORM_Y0 = 30, COMPACT = false;
 let touchMode = ('ontouchstart' in window) || matchMedia('(pointer: coarse)').matches;
 
 function setLayout(vw, vh, deck) {
@@ -91,14 +92,20 @@ function setLayout(vw, vh, deck) {
   H = VH - DECK_H;
   W = Math.min(VW, Math.round(Math.max(224, H * 1.25)));
   OX = Math.floor((VW - W) / 2);
+  // Celular vertical: mundo angosto para que todo se vea grande (menos columnas y filas)
+  COMPACT = W < 180;
   GROUND_Y = H - 44;
   PLAYER_Y = GROUND_Y - 11;
   SHIELD_Y = GROUND_Y - 34;
   COW_Y = GROUND_Y + 15;
+  COLS = clamp(Math.floor((W - 30) / 16), 5, 8);
+  ROWS = H < 230 ? 4 : 5;
+  FORM_Y0 = COMPACT ? 24 : 30;
   COLG = 16 * clamp(W / 224, 1, 1.4);
-  ROWG = 14 * clamp(1 + (H - 256) / 256 * 0.6, 1, 1.35);
+  ROWG = COMPACT ? 12 : 14 * clamp(1 + (H - 256) / 256 * 0.6, 1, 1.35);
+  HS = clamp(W / 224, 0.55, 1);   // escala de velocidades horizontales
   // VD: cuánto más recorrido vertical hay que en el arcade original; escala velocidades
-  VD = clamp((PLAYER_Y - (30 + 4 * ROWG + 8)) / 101, 0.8, 3);
+  VD = clamp((PLAYER_Y - (FORM_Y0 + (ROWS - 1) * ROWG + 8)) / 101, 0.6, 3);
   CY = Math.round(SHIELD_Y / 2 + 35);
   TY = Math.max(0, Math.round((SHIELD_Y - 178) * 0.5));
 }
@@ -429,6 +436,9 @@ function makeTitleLogo(text, scale, fill, lower, outline, shadow, thick) {
 }
 const LOGO = makeTitleLogo('VAQUITAS', 4, '#ffffff', '#9ccaff', '#1f5fd1', '#06123a', 2);
 const SUBLOGO = makeTitleLogo('ABDUCIDAS', 2, '#c6ff4a', '#5bea6b', '#14361f', '#050a1f', 1);
+// versiones para el modo compacto (celular vertical)
+const LOGO_S = makeTitleLogo('VAQUITAS', 2, '#ffffff', '#9ccaff', '#1f5fd1', '#06123a', 1);
+const SUBLOGO_S = makeTitleLogo('ABDUCIDAS', 1, '#c6ff4a', '#5bea6b', '#14361f', '#050a1f', 1);
 const blitLogo = (img, x, y) => ctx.drawImage(img, x, y, img.lw, img.lh);
 
 // ======================================================================
@@ -480,8 +490,9 @@ function buildScene() {
 
   // Luna con halo, sombreado y cráteres
   // en pantallas altas la luna sube para no encimarse con el logo
-  const moonY = TY > 30 ? 16 + TY * 0.45 : clamp(SHIELD_Y * 0.42, 40, 150);
-  const mx = Math.round((VW - 26) * RS), my = Math.round(moonY * RS), mr = 9 * RS;
+  const moonY = COMPACT ? 22 : TY > 30 ? 16 + TY * 0.45 : clamp(SHIELD_Y * 0.42, 40, 150);
+  const mr = (COMPACT ? 6 : 9) * RS;
+  const mx = Math.round((VW - (COMPACT ? 14 : 26)) * RS), my = Math.round(moonY * RS);
   for (let y = -mr - 12; y <= mr + 12; y++) for (let x = -mr - 12; x <= mr + 12; x++) {
     const d = Math.hypot(x, y);
     if (d <= mr || d > mr + 12) continue;
@@ -493,8 +504,9 @@ function buildScene() {
     const ld = Math.hypot(x + mr * 0.35, y + mr * 0.35) / (mr * 1.35);
     px(mx + x, my + y, ld < 0.5 ? '#fbf7dc' : ld < 0.78 ? '#f3eec8' : ld < 0.93 ? '#ddd5a8' : '#c2b98d');
   }
+  const mk = mr / (9 * RS);
   [[3, 2, 2.2], [-4, 4, 1.6], [1, -5, 1.3], [5, -1, 1], [-5, -2, 1.4], [-1, 6, 1]].forEach(([cx, cy, r]) => {
-    const R = r * RS, ox = mx + cx * RS, oy = my + cy * RS;
+    const R = Math.max(1, Math.round(r * RS * mk)), ox = Math.round(mx + cx * RS * mk), oy = Math.round(my + cy * RS * mk);
     for (let y = -R; y <= R; y++) for (let x = -R; x <= R; x++) {
       if (x * x + y * y > R * R) continue;
       px(Math.round(ox + x), Math.round(oy + y), x + y > R * 0.5 ? '#e9e2bb' : x + y < -R * 0.5 ? '#c4bb8e' : '#d6cd9f');
@@ -786,8 +798,11 @@ function makeShield(x, y) {
   }
   return s;
 }
+const nShields = () => COMPACT ? 3 : 4;
+const shieldX = (i, n) => Math.round(W * (i + 1) / (n + 1) - 12);
 function makeShields() {
-  return [0, 1, 2, 3].map(i => makeShield(Math.round(W * (i + 1) / 5 - 12), SHIELD_Y));
+  const n = nShields();
+  return Array.from({ length: n }, (_, i) => makeShield(shieldX(i, n), SHIELD_Y));
 }
 function renderShield(s) {
   const id = s.g.createImageData(s.w, s.h);
@@ -837,7 +852,8 @@ function newCow(x) {
   return { x, y: COW_Y, vx: 0, vy: 0, dir: Math.random() < 0.5 ? -1 : 1, t: rand(0.5, 2), frame: 0, ft: 0, state: 'free', target: null, scale: 1, rot: 0, panic: 0 };
 }
 function makeCows() {
-  return [0, 1, 2, 3, 4].map(i => newCow(Math.round(W / 5 * (i + 0.5) - 6 + rand(-6, 6))));
+  const n = COMPACT ? 4 : 5;
+  return Array.from({ length: n }, (_, i) => newCow(Math.round(W / n * (i + 0.5) - 6 + rand(-4, 4))));
 }
 const cowsLeft = () => cows.filter(c => c.state !== 'gone').length;
 
@@ -888,10 +904,11 @@ function startWave() {
   mother = null;
   shields = makeShields();
   inv = [];
-  for (let r = 0; r < 5; r++) for (let c = 0; c < 8; c++) {
-    inv.push({ c, r, type: r === 0 ? 0 : r < 3 ? 1 : 2, alive: true, dive: null });
+  const greenRows = 1 + Math.ceil((ROWS - 1) / 2);
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    inv.push({ c, r, type: r === 0 ? 0 : r < greenRows ? 1 : 2, alive: true, dive: null });
   }
-  form = { x: (W - 8 * COLG) / 2, y: 30 + DF.drop * VD, dir: 1, t: 0.6, frame: 0, note: 0 };
+  form = { x: (W - COLS * COLG) / 2, y: FORM_Y0 + DF.drop * VD, dir: 1, t: 0.6, frame: 0, note: 0, total: inv.length };
   player.x = W / 2 - TRUCK_W / 2; player.y = PLAYER_Y; player.inv = 1; player.triple = 0;
   fireT = 1.5 / DF.fire;
   abductT = (level === 1 ? rand(6, 9) : rand(3, 5)) / DF.abduct;
@@ -1024,7 +1041,7 @@ const held = k => kb[k] || tk[k];
 function updatePlayer(dt, canFire) {
   const mv = (held('left') ? -1 : 0) + (held('right') ? 1 : 0);
   if (mv) player.dir = mv;
-  player.x = clamp(player.x + mv * 88 * dt, 2, W - TRUCK_W - 2);
+  player.x = clamp(player.x + mv * 88 * HS * dt, 2, W - TRUCK_W - 2);
   if (player.inv > 0) player.inv -= dt;
   if (player.triple > 0) player.triple -= dt;
   if (canFire && held('fire') && shots.length === 0) fire();
@@ -1035,7 +1052,7 @@ function fire() {
   const x = player.x + (player.dir < 0 ? 12 : 5), y = player.y - 4;
   const vy = -210 * Math.max(1, VD * 0.8);
   if (player.triple > 0) {
-    shots.push({ x, y, vx: -45, vy }, { x, y, vx: 0, vy }, { x, y, vx: 45, vy });
+    shots.push({ x, y, vx: -45 * HS, vy }, { x, y, vx: 0, vy }, { x, y, vx: 45 * HS, vy });
   } else {
     shots.push({ x, y, vx: 0, vy });
   }
@@ -1148,7 +1165,7 @@ function killMother() {
 }
 
 function stepInterval(n) {
-  return Math.max(1 / 60, (0.03 + 0.42 * (n / 40)) / DF.speed);
+  return Math.max(1 / 60, (0.03 + 0.42 * (n / form.total)) / DF.speed);
 }
 
 function updateFormation(dt) {
@@ -1236,10 +1253,10 @@ function updateDivers(dt, forceReturn = false) {
     let tx, ty, sp = DF.diveV * Math.max(1, VD * 0.85), turn = 3.5;
     if (d.phase === 'out') {
       // rizo hacia arriba y hacia afuera antes de lanzarse
-      tx = d.ox + d.side * 26; ty = d.oy - 16;
+      tx = d.ox + d.side * 26 * HS; ty = d.oy - 16;
       if (d.t > 0.45) { d.phase = 'attack'; d.t = 0; }
     } else if (d.phase === 'attack') {
-      tx = player.x + TRUCK_W / 2 - 6 + Math.sin(d.t * d.wob) * 34;
+      tx = player.x + TRUCK_W / 2 - 6 + Math.sin(d.t * d.wob) * 34 * HS;
       ty = GROUND_Y - 50;
       d.cd -= dt;
       if (d.ammo > 0 && d.cd <= 0 && d.y > d.oy + 30 && Math.abs(d.x + 6 - (player.x + TRUCK_W / 2)) < 26 &&
@@ -1348,7 +1365,7 @@ function updateAbductions(dt, raid = false) {
       const dist = Math.hypot(tx - a.sx, ty - a.sy) || 1;
       a.u = Math.min(1, a.u + dt * (raid ? 120 : 80) * VD / dist);
       const e = a.u * a.u * (3 - 2 * a.u);
-      a.x = a.sx + (tx - a.sx) * e + Math.sin(a.u * Math.PI) * 22 * a.side;
+      a.x = a.sx + (tx - a.sx) * e + Math.sin(a.u * Math.PI) * 22 * HS * a.side;
       a.y = a.sy + (ty - a.sy) * e;
       if (a.u >= 1) {
         a.x = tx; a.y = ty; a.state = 'beam'; a.bw = 0;
@@ -1459,7 +1476,7 @@ function updateMother(dt) {
 }
 
 function moveMother(dt) {
-  mother.x += mother.dir * 42 * dt;
+  mother.x += mother.dir * 42 * HS * dt;
   mother.y = 15 + Math.sin(gt * 4) * 2;
   mother.ft += dt;
   if (mother.ft > 0.12) { mother.ft = 0; mother.frame ^= 1; SFX.mother(mother.frame); }
@@ -1668,6 +1685,13 @@ function drawWorld() {
       ctx.fillStyle = PAL.c;
       ctx.fillRect(snap(player.x) + (player.dir < 0 ? 12.5 : 5.5), snap(player.y) - 1.5, 2, 0.5);
     }
+    if (COMPACT && player.triple > 0) {        // barra de leche triple restante
+      const k = clamp(player.triple / DF.triple, 0, 1);
+      ctx.fillStyle = 'rgba(6,18,58,0.8)';
+      ctx.fillRect(snap(player.x), snap(player.y) - 3.5, TRUCK_W, 1);
+      ctx.fillStyle = PAL.c;
+      ctx.fillRect(snap(player.x), snap(player.y) - 3.5, snap(TRUCK_W * k), 1);
+    }
   }
   for (const s of shots) drawSprite(SPR.drop, s.x, s.y);
   for (const e of eshots) drawSprite(SPR.ray[e.frame], e.x, e.y);
@@ -1680,17 +1704,33 @@ function drawParticles() {
   }
 }
 
+// Parte un texto en líneas que quepan en maxW (para pantallas angostas)
+function wrapText(s, scale, maxW) {
+  const lines = [];
+  let cur = '';
+  for (const w of norm(s).split(' ')) {
+    const t = cur ? cur + ' ' + w : w;
+    if (!cur || textWidth(t, scale) <= maxW) cur = t;
+    else { lines.push(cur); cur = w; }
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+const lineH = scale => 8 * scale + 2;
+
 function drawFloaters() {
   for (const f of floaters) {
-    const w = textWidth(f.text);
-    const x = clamp(Math.round(f.x - w / 2), 2, W - 2 - w);
+    const lines = wrapText(f.text, 1, W - 4);
     ctx.globalAlpha = Math.min(1, f.t / 0.3);
-    drawTextShadow(f.text, x, Math.round(f.y), f.color);
+    lines.forEach((l, k) => {
+      const w = textWidth(l);
+      drawTextShadow(l, clamp(Math.round(f.x - w / 2), 2, W - 2 - w), Math.round(f.y) + k * lineH(1), f.color);
+    });
     ctx.globalAlpha = 1;
   }
 }
 
-// Botones de pausa/sonido arriba al centro (en PC; en táctil van en el panel de controles)
+// Botones de pausa/sonido arriba al centro
 const topBtns = () => [{ id: 'pause', x: W / 2 - 13, y: 1.5, w: 11, h: 9 }, { id: 'mute', x: W / 2 + 2, y: 1.5, w: 11, h: 9 }];
 function drawIconPause(cx, cy, s) {
   ctx.fillStyle = PAL.w;
@@ -1719,66 +1759,87 @@ function drawTopButtons() {
 }
 
 function drawHUD() {
-  if (!DECK_H) drawTopButtons();
+  drawTopButtons();
   if (state === 'title') {
     if (!DECK_H) drawText(W >= 250 ? 'FLECHAS MOVER · ESPACIO DISPARA' : 'FLECHAS · ESPACIO', W / 2, H - 9, '#4f6299', 1, 'center');
     return;
   }
-  drawText('PUNTOS', 4, 3, '#7fb2ff');
-  drawText(pad(score), 46, 3, PAL.w);
   const shownHi = Math.max(hi, score);
-  drawText(pad(shownHi), W - 4, 3, PAL.w, 1, 'right');
-  drawText('RECORD', W - 4 - 42, 3, '#7fb2ff', 1, 'right');
+  if (COMPACT) {
+    // marcador compacto: puntos a la izquierda, récord a la derecha
+    drawText(pad(score), 4, 3, PAL.w);
+    drawText(pad(shownHi), W - 4, 3, '#7fb2ff', 1, 'right');
+  } else {
+    drawText('PUNTOS', 4, 3, '#7fb2ff');
+    drawText(pad(score), 46, 3, PAL.w);
+    drawText(pad(shownHi), W - 4, 3, PAL.w, 1, 'right');
+    drawText('RECORD', W - 4 - 42, 3, '#7fb2ff', 1, 'right');
+  }
 
-  for (let i = 0; i < Math.min(lives, 4); i++) drawSprite(SPR.truck, 4 + i * 23, H - 12);
-  drawText('OLEADA ' + level, W - 4, H - 9, '#9fe39f', 1, 'right');
-  if (player.triple > 0) {
-    drawSprite(SPR.carton, W / 2 - 12, H - 11);
-    drawText('X3 ' + Math.ceil(player.triple), W / 2 - 3, H - 9, PAL.c);
+  for (let i = 0; i < Math.min(lives, COMPACT ? 3 : 4); i++) drawSprite(SPR.truck, 4 + i * (COMPACT ? 21 : 23), H - 12);
+  if (COMPACT) {
+    const n = String(level);
+    drawText(n, W - 4, H - 9, '#9fe39f', 1, 'right');
+    drawSprite(SPR.ufo[0][0], W - 4 - textWidth(n) - 14, H - 11);
+  } else {
+    drawText('OLEADA ' + level, W - 4, H - 9, '#9fe39f', 1, 'right');
+    if (player.triple > 0) {
+      drawSprite(SPR.carton, W / 2 - 12, H - 11);
+      drawText('X3 ' + Math.ceil(player.triple), W / 2 - 3, H - 9, PAL.c);
+    }
   }
 }
 
 // Inicio minimalista: logo, indicación para jugar y récord (si existe), centrados en el cielo
 function drawTitle() {
-  const blockH = LOGO.lh + 4 + SUBLOGO.lh + 26 + 7;
-  let y = Math.round((TOP + SHIELD_Y) / 2 - blockH / 2 - 6);
-  blitLogo(LOGO, Math.round((W - LOGO.lw) / 2), y);
-  y += LOGO.lh + 4;
-  blitLogo(SUBLOGO, Math.round((W - SUBLOGO.lw) / 2), y);
-  y += SUBLOGO.lh + 26;
+  const logo = COMPACT ? LOGO_S : LOGO, sub = COMPACT ? SUBLOGO_S : SUBLOGO, gap = COMPACT ? 18 : 26;
+  const blockH = logo.lh + 4 + sub.lh + gap + 7;
+  let y = Math.round((TOP + SHIELD_Y) / 2 - blockH / 2 - (COMPACT ? 0 : 6));
+  blitLogo(logo, Math.round((W - logo.lw) / 2), y);
+  y += logo.lh + 4;
+  blitLogo(sub, Math.round((W - sub.lw) / 2), y);
+  y += sub.lh + gap;
   ctx.globalAlpha = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(clock * 3.2));   // respira en vez de parpadear
   drawTextShadow(touchMode ? 'TOCA PARA JUGAR' : 'PRESIONA ENTER', W / 2, y, PAL.w, 1, 'center');
   ctx.globalAlpha = 1;
   if (hi > 0) drawText('RECORD ' + pad(hi), W / 2, y + 16, '#4f6299', 1, 'center');
 }
 
+const panelM = () => COMPACT ? 4 : 14;
 function drawPanel(y0, y1) {
+  const m = panelM();
   ctx.fillStyle = 'rgba(4,8,24,0.85)';
-  ctx.fillRect(14, y0, W - 28, y1 - y0);
+  ctx.fillRect(m, y0, W - m * 2, y1 - y0);
   ctx.fillStyle = PAL.b;
-  ctx.fillRect(14, y0, W - 28, 1); ctx.fillRect(14, y1 - 1, W - 28, 1);
-  ctx.fillRect(14, y0, 1, y1 - y0); ctx.fillRect(W - 15, y0, 1, y1 - y0);
+  ctx.fillRect(m, y0, W - m * 2, 1); ctx.fillRect(m, y1 - 1, W - m * 2, 1);
+  ctx.fillRect(m, y0, 1, y1 - y0); ctx.fillRect(W - m - 1, y0, 1, y1 - y0);
   ctx.fillStyle = '#06123a';
-  ctx.fillRect(15, y0 + 1, W - 30, 0.5);
+  ctx.fillRect(m + 1, y0 + 1, W - m * 2 - 2, 0.5);
 }
-
-function drawGameOver() {
-  drawPanel(CY - 48, CY + 48);
-  drawTextShadow('FIN DEL JUEGO', W / 2, CY - 38, PAL.r, 2, 'center');
-  if (gameOverReason) drawText(gameOverReason, W / 2, CY - 16, PAL.y, 1, 'center');
-  drawText('PUNTOS ' + pad(score), W / 2, CY - 2, PAL.w, 1, 'center');
-  drawText('VAQUITAS A SALVO: ' + cowsLeft(), W / 2, CY + 10, '#9fe39f', 1, 'center');
-  if (newRecord && Math.floor(clock * 4) % 2) drawText('¡NUEVO RECORD! OLEADA ' + level, W / 2, CY + 22, PAL.c, 1, 'center');
-  if (stateTimer > 1 && Math.floor(clock * 2.2) % 2 === 0) {
-    drawText(touchMode ? 'TOCA PARA CONTINUAR' : 'ENTER PARA CONTINUAR', W / 2, CY + 34, PAL.y, 1, 'center');
+// Panel centrado que se ajusta a su contenido; cada renglón: [texto, escala, color, visible]
+function drawPanelItems(items) {
+  const maxW = W - panelM() * 2 - 8;
+  const laid = items.map(([t, sc, col, show = true]) => ({ lines: wrapText(t, sc, maxW), sc, col, show }));
+  const total = laid.reduce((a, it) => a + it.lines.length * lineH(it.sc) + 4, 0) - 4;
+  let y = Math.round(CY - total / 2);
+  drawPanel(y - 9, y + total + 7);
+  for (const it of laid) {
+    if (it.show) it.lines.forEach((l, k) => drawTextShadow(l, W / 2, y + k * lineH(it.sc), it.col, it.sc, 'center'));
+    y += it.lines.length * lineH(it.sc) + 4;
   }
 }
 
+function drawGameOver() {
+  const items = [['FIN DEL JUEGO', 2, PAL.r]];
+  if (gameOverReason) items.push([gameOverReason, 1, PAL.y]);
+  items.push(['PUNTOS ' + pad(score), 1, PAL.w], ['VAQUITAS A SALVO: ' + cowsLeft(), 1, '#9fe39f']);
+  if (newRecord) items.push(['¡NUEVO RECORD! OLEADA ' + level, 1, PAL.c, Math.floor(clock * 4) % 2 === 1]);
+  items.push([touchMode ? 'TOCA PARA CONTINUAR' : 'ENTER PARA CONTINUAR', 1, PAL.y, stateTimer > 1 && Math.floor(clock * 2.2) % 2 === 0]);
+  drawPanelItems(items);
+}
+
 function drawLevelClear() {
-  drawPanel(CY - 36, CY + 28);
-  drawTextShadow('¡OLEADA', W / 2, CY - 28, PAL.y, 2, 'center');
-  drawTextShadow('SUPERADA!', W / 2, CY - 10, PAL.y, 2, 'center');
-  drawText('BONO LECHERO +' + waveBonus, W / 2, CY + 14, PAL.c, 1, 'center');
+  drawPanelItems([['¡OLEADA SUPERADA!', 2, PAL.y], ['BONO LECHERO +' + waveBonus, 1, PAL.c]]);
 }
 
 // ---------- Panel de controles táctiles (dibujado en el canvas) ----------
@@ -1786,17 +1847,13 @@ let deckBtns = [];
 function layoutDeck() {
   deckBtns = [];
   if (!DECK_H) return;
-  const pad = 6, bh = Math.min(DECK_H - 14, 50), y = H + Math.round((DECK_H - bh) / 2);
-  const aw = Math.min(bh, Math.floor((VW * 0.45 - pad * 2) / 2));
-  const fw = Math.min(Math.round(bh * 1.6), Math.round(VW * 0.32));
+  const pad = Math.max(3, Math.round(VW * 0.03)), bh = Math.min(DECK_H - 10, 50), y = H + Math.round((DECK_H - bh) / 2);
+  const aw = Math.min(Math.round(bh * 1.1), Math.floor((VW * 0.52 - pad * 3) / 2));
+  const fw = Math.min(Math.round(bh * 1.8), Math.round(VW * 0.38));
   const L = { id: 'left', x: pad, y, w: aw, h: bh };
   const R = { id: 'right', x: pad * 2 + aw, y, w: aw, h: bh };
   const F = { id: 'fire', x: VW - pad - fw, y, w: fw, h: bh };
-  const gl = R.x + R.w, gr = F.x, mid = (gl + gr) / 2;
-  const sw = Math.max(10, Math.min(16, (gr - gl - 9) / 2)), sh = 12;
-  const P = { id: 'pause', x: mid - sw - 1.5, y: H + DECK_H / 2 - sh / 2, w: sw, h: sh };
-  const M = { id: 'mute', x: mid + 1.5, y: P.y, w: sw, h: sh };
-  deckBtns = [L, R, P, M, F];
+  deckBtns = [L, R, F];
 }
 function roundRect(x, y, w, h, col, r = 1) {
   ctx.fillStyle = col;
@@ -1866,18 +1923,16 @@ function render() {
   if (state === 'title') drawTitle();
   if (banner && (state === 'playing' || state === 'raid')) {
     const by = banner.y || CY + 4;
-    if (state === 'raid') { ctx.fillStyle = 'rgba(4,8,24,0.7)'; ctx.fillRect(-OX, by - 5, VW, 35); }
+    const big = wrapText(banner.text, 2, W - 8), small = wrapText(banner.sub, 1, W - 8);
+    const h2 = big.length * lineH(2) + 2;
+    if (state === 'raid') { ctx.fillStyle = 'rgba(4,8,24,0.7)'; ctx.fillRect(-OX, by - 5, VW, h2 + small.length * lineH(1) + 8); }
     const blink = state !== 'raid' || Math.floor(clock * 3) % 3;
-    if (blink) drawTextShadow(banner.text, W / 2, by, state === 'raid' ? PAL.r : PAL.w, 2, 'center');
-    drawTextShadow(banner.sub, W / 2, by + 20, PAL.y, 1, 'center');
+    if (blink) big.forEach((l, k) => drawTextShadow(l, W / 2, by + k * lineH(2), state === 'raid' ? PAL.r : PAL.w, 2, 'center'));
+    small.forEach((l, k) => drawTextShadow(l, W / 2, by + h2 + k * lineH(1), PAL.y, 1, 'center'));
   }
   if (state === 'levelclear') drawLevelClear();
   if (state === 'gameover') drawGameOver();
-  if (paused) {
-    drawPanel(CY - 20, CY + 24);
-    drawTextShadow('PAUSA', W / 2, CY - 12, PAL.w, 2, 'center');
-    drawText(touchMode ? 'TOCA LA PANTALLA' : 'P PARA CONTINUAR', W / 2, CY + 10, '#9ccaff', 1, 'center');
-  }
+  if (paused) drawPanelItems([['PAUSA', 2, PAL.w], [touchMode ? 'TOCA LA PANTALLA' : 'P PARA CONTINUAR', 1, '#9ccaff']]);
   ctx.restore();
   if (DECK_H) drawDeck();
 }
@@ -1909,15 +1964,16 @@ function toggleMute() { AudioSys.setMuted(!AudioSys.muted); }
 const inside = (b, x, y, m = 0) => x >= b.x - m && x < b.x + b.w + m && y >= b.y - m && y < b.y + b.h + m;
 function zoneAt(vx, vy) {
   if (DECK_H && vy >= H) {
-    const [L, R, P, M, F] = deckBtns;
-    if (inside(P, vx, vy, 2)) return 'pause';
-    if (inside(M, vx, vy, 2)) return 'mute';
-    if (vx >= F.x - 8) return 'fire';
+    const [L, R, F] = deckBtns;
+    if (vx >= F.x - 4) return 'fire';
     if (vx < (L.x + L.w + R.x) / 2) return 'left';
     if (vx < R.x + R.w + 4) return 'right';
     return null;
   }
-  if (!DECK_H) for (const b of topBtns()) if (inside(b, vx - OX, vy, 3)) return b.id;
+  for (const b of topBtns()) {
+    if (state === 'title' && b.id === 'pause') continue;
+    if (inside(b, vx - OX, vy, touchMode ? 4 : 3)) return b.id;
+  }
   return 'screen';
 }
 const ptrs = new Map();
@@ -1961,35 +2017,44 @@ cvs.addEventListener('contextmenu', e => e.preventDefault());
 // El mundo lógico se adapta a la forma de la pantalla. Se dibuja a un múltiplo
 // entero de la resolución de sprite (píxeles uniformes) y el navegador lo ajusta
 // al tamaño exacto de la pantalla.
-let layoutKey = '';
+let layoutKey = '', deckDev = 0, fitS = 1;
 function fit() {
   const r = wrap.getBoundingClientRect();
   const dpr = Math.min(window.devicePixelRatio || 1, 3);
   const dw = Math.max(1, r.width * dpr), dh = Math.max(1, r.height * dpr);
-  const baseH = 256 + (touchMode ? 56 : 0);
-  const S = Math.min(dw / 224, dh / baseH);
-  const vw = Math.max(224, Math.floor(dw / S)), vh = Math.max(baseH, Math.floor(dh / S));
+  // En celular vertical el mundo es más angosto (~3.3 px de pantalla por unidad) para que
+  // todo se vea al doble; el panel de controles mide lo mismo en cualquier teléfono.
+  const portrait = touchMode && r.height > r.width * 1.2;
+  const minW = portrait ? clamp(r.width / 3.3, 112, 224) : 224;
+  const minH = portrait ? 190 : 256;
+  deckDev = touchMode ? clamp(r.height * (portrait ? 0.16 : 0.2), 90, 150) * dpr : 0;
+  const S = Math.min(dw / minW, (dh - deckDev) / minH);
+  const vw = Math.floor(dw / S), vh = Math.floor(dh / S);
   let si = RS * Math.max(1, Math.ceil(S / RS - 0.15));
   while (si > RS && vw * vh * si * si > 5.5e6) si -= RS;
   Sint = si;
   cvs.width = vw * si; cvs.height = vh * si;
   cvs.style.width = (vw * S / dpr) + 'px';
   cvs.style.height = (vh * S / dpr) + 'px';
+  fitS = S;
   const key = vw + 'x' + vh + 'x' + touchMode;
   if (key !== layoutKey) { layoutKey = key; applyLayout(vw, vh); }
 }
 function applyLayout(vw, vh) {
-  const deck = touchMode ? Math.round(clamp(56 + (vh - 312) * 0.5, 56, 84)) : 0;
+  const deck = touchMode ? Math.round(deckDev / fitS) : 0;
+  const wasCompact = COMPACT;
   setLayout(vw, vh, deck);
   layoutDeck();
   buildScene();
   // reacomoda lo que ya está en pantalla
-  shields.forEach((s, i) => { s.x = Math.round(W * (i + 1) / 5 - 12); s.y = SHIELD_Y; });
+  if (shields.length !== nShields()) shields = makeShields();
+  shields.forEach((s, i) => { s.x = shieldX(i, shields.length); s.y = SHIELD_Y; });
   player.y = PLAYER_Y;
   player.x = clamp(player.x, 2, W - TRUCK_W - 2);
   for (const c of cows) { c.x = clamp(c.x, 4, W - 16); if (c.state === 'free') c.y = COW_Y; }
-  form.x = clamp(form.x, 3, Math.max(3, W - 8 * COLG));
+  form.x = clamp(form.x, 3, Math.max(3, W - COLS * COLG));
   if (state === 'title') { player.x = W / 2 - TRUCK_W / 2; cows = makeCows(); }
+  else if (wasCompact !== COMPACT && state !== 'gameover') startWave();   // cambió la forma de pantalla: rearma la oleada
 }
 addEventListener('resize', fit);
 addEventListener('orientationchange', () => setTimeout(fit, 150));
@@ -2024,6 +2089,7 @@ window.__vaquitas = {
   clearWave: () => { inv.forEach(i => (i.alive = false)); },
   get internals() { return { player, abductors, cows, eshots, shots }; },
   sprites: SPR,
+  get keys() { return { kb: { ...kb }, tk: { ...tk }, ptrs: [...ptrs.values()] }; },
   get mother() { return mother && { x: mother.x, dir: mother.dir }; },
   get powerups() { return powerups.map(p => ({ state: p.state, y: Math.round(p.y), life: +p.life.toFixed(2) })); },
   spawnMother: () => { motherT = 0; }, hitMother: () => { if (mother) killMother(); },
