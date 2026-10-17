@@ -1187,7 +1187,8 @@ function startRaid() {
   shots = []; eshots = []; powerups = [];
   player.triple = 0;
   for (const i of inv) if (i.dive) i.dive.phase = 'return';
-  banner = COMPACT ? { text: '¡SIN DEFENSA!', sub: '¡SE LAS LLEVAN!', t: 99 }
+  // en celular la franja se va antes de que las naves suban con las vacas, para no taparlas
+  banner = COMPACT ? { text: '¡SIN DEFENSA!', sub: '¡SE LAS LLEVAN!', t: 2.5 }
     : { text: '¡SIN DEFENSA!', sub: '¡SE LLEVAN A LAS VAQUITAS!', t: 99, y: CY - 60 };
   SFX.alarm();
   const targets = cows.filter(c => (c.state === 'free' || c.state === 'falling') && !c.target);
@@ -2159,12 +2160,14 @@ function drawBanner() {
     // franja de un renglón: arriba de las pacas, o bajo el marcador durante el ataque final
     const ts = titleS(), h = lineH(ts) + lineH(1) + 6;
     const y0 = raid ? 13 : SHIELD_Y - h - 3;
+    ctx.globalAlpha = Math.min(1, banner.t / 0.4);   // se desvanece al final
     ctx.fillStyle = 'rgba(4,8,24,0.75)';
     ctx.fillRect(-OX, y0, VW, h);
     ctx.fillStyle = raid ? PAL.r : PAL.b;
     ctx.fillRect(-OX, y0, VW, 0.5); ctx.fillRect(-OX, y0 + h - 0.5, VW, 0.5);
     if (blink) drawTextShadow(banner.text, W / 2, y0 + 3, raid ? PAL.r : PAL.w, ts, 'center');
     drawTextShadow(banner.sub, W / 2, y0 + 3 + lineH(ts), PAL.y, 1, 'center');
+    ctx.globalAlpha = 1;
     return;
   }
   const by = banner.y || CY + 4;
