@@ -349,6 +349,202 @@ function drawSprite(img, x, y, flip = false) {
 }
 
 // ======================================================================
+//  Idiomas (los 10 más hablados). Se toma el del teléfono y se puede cambiar en el inicio.
+// ======================================================================
+const LANGS = ['es', 'en', 'zh', 'hi', 'ar', 'fr', 'bn', 'pt', 'ru', 'ur'];
+const LANG_NAMES = { es: 'ESPAÑOL', en: 'ENGLISH', zh: '中文', hi: 'हिन्दी', ar: 'العربية', fr: 'FRANÇAIS', bn: 'বাংলা', pt: 'PORTUGUÊS', ru: 'РУССКИЙ', ur: 'اردو' };
+// Las claves que terminan en C son versiones cortas para celular vertical
+const TX = {
+  es: {
+    wave: 'OLEADA {0}', sub1: '¡PROTEGE LA LECHE!', sub1C: '¡CUIDA LA LECHE!', sub2: '¡ATAQUES EN PICADA!', sub2C: '¡EN PICADA!',
+    sub3: '¡LA FLOTA SE AGITA!', sub3C: '¡SE AGITAN!', subN: '¡MAS RAPIDO!', plusCow: '+1 VAQUITA',
+    noDef: '¡SIN DEFENSA!', raidSub: '¡SE LLEVAN A LAS VAQUITAS!', raidSubC: '¡SE LAS LLEVAN!',
+    cowSaved: '¡VACA SALVADA! +100', landed: '¡LAS NAVES ATERRIZARON!', spilled: '¡LECHE DERRAMADA!', alert: '¡ALERTA!',
+    abducted: '¡VACA ABDUCIDA!', triple: '¡LECHE TRIPLE!', keys: 'FLECHAS MOVER · ESPACIO DISPARA', keysC: 'FLECHAS · ESPACIO',
+    score: 'PUNTOS', record: 'RECORD', tapPlay: 'TOCA PARA JUGAR', pressEnter: 'PRESIONA ENTER',
+    install: 'INSTALAR APP', installC: 'INSTALAR', installBtn: 'INSTALAR', liked: '¿TE GUSTO?',
+    installBody: 'INSTALALO PARA JUGAR A PANTALLA COMPLETA Y SIN INTERNET', notNow: 'AHORA NO', helpTitle: 'PARA INSTALAR',
+    ios1: '1. TOCA COMPARTIR (EL CUADRO CON LA FLECHA HACIA ARRIBA)', ios2: "2. ELIGE 'AGREGAR A INICIO'",
+    and1: '1. ABRE EL MENU DEL NAVEGADOR (LOS 3 PUNTOS)', and2: "2. ELIGE 'INSTALAR APP' O 'AGREGAR A PANTALLA DE INICIO'",
+    tapClose: 'TOCA PARA CERRAR', gameOver: 'FIN DEL JUEGO', lostAll: '¡SE LLEVARON A TODAS LAS VACAS!', lostAllC: '¡SIN VAQUITAS!',
+    cowsSafe: 'VAQUITAS A SALVO: {0}', newRec: '¡NUEVO RECORD!', newRecWave: '¡NUEVO RECORD! OLEADA {0}',
+    tapCont: 'TOCA PARA CONTINUAR', tapContC: 'TOCA PARA SEGUIR', enterCont: 'ENTER PARA CONTINUAR',
+    cleared: '¡OLEADA SUPERADA!', clearedC: '¡SUPERADA!', bonus: 'BONO LECHERO +{0}', bonusC: 'BONO +{0}',
+    fire: 'FUEGO', pause: 'PAUSA', tapScreen: 'TOCA LA PANTALLA', pCont: 'P PARA CONTINUAR', language: 'IDIOMA'
+  },
+  en: {
+    wave: 'WAVE {0}', sub1: 'PROTECT THE MILK!', sub1C: 'GUARD THE MILK!', sub2: 'DIVE ATTACKS!',
+    sub3: 'THE FLEET STIRS!', sub3C: 'FLEET STIRS!', subN: 'FASTER!', plusCow: '+1 COW',
+    noDef: 'DEFENSELESS!', raidSub: 'THEY ARE TAKING THE COWS!', raidSubC: 'THEY TAKE COWS!',
+    cowSaved: 'COW SAVED! +100', landed: 'THE SHIPS LANDED!', spilled: 'MILK SPILLED!', alert: 'ALERT!',
+    abducted: 'COW ABDUCTED!', triple: 'TRIPLE MILK!', keys: 'ARROWS MOVE · SPACE FIRES', keysC: 'ARROWS · SPACE',
+    score: 'SCORE', record: 'BEST', tapPlay: 'TAP TO PLAY', pressEnter: 'PRESS ENTER',
+    install: 'INSTALL APP', installC: 'INSTALL', installBtn: 'INSTALL', liked: 'ENJOYING IT?',
+    installBody: 'INSTALL IT TO PLAY FULL SCREEN AND OFFLINE', notNow: 'NOT NOW', helpTitle: 'TO INSTALL',
+    ios1: '1. TAP SHARE (THE BOX WITH THE UP ARROW)', ios2: "2. CHOOSE 'ADD TO HOME SCREEN'",
+    and1: '1. OPEN THE BROWSER MENU (THE 3 DOTS)', and2: "2. CHOOSE 'INSTALL APP' OR 'ADD TO HOME SCREEN'",
+    tapClose: 'TAP TO CLOSE', gameOver: 'GAME OVER', lostAll: 'THEY TOOK ALL THE COWS!', lostAllC: 'NO COWS LEFT!',
+    cowsSafe: 'COWS SAFE: {0}', newRec: 'NEW RECORD!', newRecWave: 'NEW RECORD! WAVE {0}',
+    tapCont: 'TAP TO CONTINUE', enterCont: 'ENTER TO CONTINUE',
+    cleared: 'WAVE CLEARED!', clearedC: 'CLEARED!', bonus: 'MILK BONUS +{0}', bonusC: 'BONUS +{0}',
+    fire: 'FIRE', pause: 'PAUSED', tapScreen: 'TAP THE SCREEN', pCont: 'P TO CONTINUE', language: 'LANGUAGE'
+  },
+  zh: {
+    wave: '第 {0} 波', sub1: '保护牛奶！', sub2: '俯冲攻击！', sub3: '舰队躁动！', subN: '更快了！', plusCow: '+1 奶牛',
+    noDef: '失去防御！', raidSub: '它们要带走奶牛了！',
+    cowSaved: '奶牛得救！+100', landed: '飞船着陆了！', spilled: '牛奶洒了！', alert: '警报！',
+    abducted: '奶牛被劫走了！', triple: '三倍牛奶！', keys: '方向键移动 · 空格键射击', keysC: '方向键 · 空格',
+    score: '得分', record: '最高分', tapPlay: '点击开始', pressEnter: '按 ENTER 开始',
+    install: '安装应用', installC: '安装', installBtn: '安装', liked: '喜欢吗？',
+    installBody: '安装后可全屏游玩，无需联网', notNow: '以后再说', helpTitle: '如何安装',
+    ios1: '1. 点击“分享”（带向上箭头的方框）', ios2: '2. 选择“添加到主屏幕”',
+    and1: '1. 打开浏览器菜单（三个点）', and2: '2. 选择“安装应用”或“添加到主屏幕”',
+    tapClose: '点击关闭', gameOver: '游戏结束', lostAll: '所有奶牛都被抓走了！', lostAllC: '奶牛全没了！',
+    cowsSafe: '安全的奶牛：{0}', newRec: '新纪录！', newRecWave: '新纪录！第 {0} 波',
+    tapCont: '点击继续', enterCont: '按 ENTER 继续',
+    cleared: '本波完成！', clearedC: '过关！', bonus: '牛奶奖励 +{0}', bonusC: '奖励 +{0}',
+    fire: '开火', pause: '暂停', tapScreen: '点击屏幕', pCont: '按 P 继续', language: '语言'
+  },
+  hi: {
+    wave: 'लहर {0}', sub1: 'दूध बचाओ!', sub2: 'गोता हमले!', sub3: 'बेड़ा बेचैन है!', subN: 'और तेज़!', plusCow: '+1 गाय',
+    noDef: 'कोई बचाव नहीं!', raidSub: 'वे गायों को ले जा रहे हैं!', raidSubC: 'गायें ले जा रहे हैं!',
+    cowSaved: 'गाय बच गई! +100', landed: 'यान उतर गए!', spilled: 'दूध गिर गया!', alert: 'सावधान!',
+    abducted: 'गाय अगवा हुई!', triple: 'तिगुना दूध!', keys: 'तीर: चलें · स्पेस: फायर', keysC: 'तीर · स्पेस',
+    score: 'अंक', record: 'रिकॉर्ड', tapPlay: 'खेलने के लिए टैप करें', pressEnter: 'ENTER दबाएँ',
+    install: 'ऐप इंस्टॉल करें', installC: 'इंस्टॉल', installBtn: 'इंस्टॉल', liked: 'पसंद आया?',
+    installBody: 'फ़ुल स्क्रीन और बिना इंटरनेट खेलने के लिए इंस्टॉल करें', notNow: 'अभी नहीं', helpTitle: 'इंस्टॉल कैसे करें',
+    ios1: '1. शेयर पर टैप करें (ऊपर तीर वाला बॉक्स)', ios2: "2. 'होम स्क्रीन में जोड़ें' चुनें",
+    and1: '1. ब्राउज़र मेनू खोलें (3 बिंदु)', and2: "2. 'ऐप इंस्टॉल करें' या 'होम स्क्रीन में जोड़ें' चुनें",
+    tapClose: 'बंद करने के लिए टैप करें', gameOver: 'खेल ख़त्म', lostAll: 'वे सारी गायें ले गए!', lostAllC: 'कोई गाय नहीं बची!',
+    cowsSafe: 'सुरक्षित गायें: {0}', newRec: 'नया रिकॉर्ड!', newRecWave: 'नया रिकॉर्ड! लहर {0}',
+    tapCont: 'जारी रखने के लिए टैप करें', enterCont: 'जारी रखने के लिए ENTER',
+    cleared: 'लहर पार!', clearedC: 'पार!', bonus: 'दूध बोनस +{0}', bonusC: 'बोनस +{0}',
+    fire: 'फायर', pause: 'विराम', tapScreen: 'स्क्रीन पर टैप करें', pCont: 'जारी रखने के लिए P', language: 'भाषा'
+  },
+  ar: {
+    wave: 'الموجة {0}', sub1: 'احمِ الحليب!', sub2: 'هجمات انقضاضية!', sub3: 'الأسطول يتحرك!', subN: 'أسرع!', plusCow: '+1 بقرة',
+    noDef: 'بلا دفاع!', raidSub: 'إنهم يأخذون الأبقار!',
+    cowSaved: 'نجت البقرة! +100', landed: 'هبطت السفن!', spilled: 'انسكب الحليب!', alert: 'تحذير!',
+    abducted: 'خُطفت بقرة!', triple: 'حليب ثلاثي!', keys: 'الأسهم للتحرك · المسافة للإطلاق', keysC: 'الأسهم · المسافة',
+    score: 'النقاط', record: 'الأفضل', tapPlay: 'المس للعب', pressEnter: 'اضغط ENTER',
+    install: 'تثبيت التطبيق', installC: 'تثبيت', installBtn: 'تثبيت', liked: 'هل أعجبتك؟',
+    installBody: 'ثبّتها لتلعب بملء الشاشة ودون إنترنت', notNow: 'ليس الآن', helpTitle: 'للتثبيت',
+    ios1: '1. المس زر المشاركة (المربع ذو السهم)', ios2: "2. اختر 'إضافة إلى الشاشة الرئيسية'",
+    and1: '1. افتح قائمة المتصفح (النقاط الثلاث)', and2: "2. اختر 'تثبيت التطبيق' أو 'إضافة إلى الشاشة الرئيسية'",
+    tapClose: 'المس للإغلاق', gameOver: 'انتهت اللعبة', lostAll: 'أخذوا كل الأبقار!', lostAllC: 'لم تبقَ أبقار!',
+    cowsSafe: 'أبقار ناجية: {0}', newRec: 'رقم قياسي جديد!', newRecWave: 'رقم قياسي جديد! الموجة {0}',
+    tapCont: 'المس للمتابعة', enterCont: 'ENTER للمتابعة',
+    cleared: 'اجتزت الموجة!', clearedC: 'أحسنت!', bonus: 'مكافأة الحليب +{0}', bonusC: 'مكافأة +{0}',
+    fire: 'إطلاق', pause: 'إيقاف مؤقت', tapScreen: 'المس الشاشة', pCont: 'P للمتابعة', language: 'اللغة'
+  },
+  fr: {
+    wave: 'VAGUE {0}', sub1: 'PROTÈGE LE LAIT !', sub1C: 'SAUVE LE LAIT !', sub2: 'ATTAQUES EN PIQUÉ !', sub2C: 'EN PIQUÉ !',
+    sub3: "LA FLOTTE S'AGITE !", sub3C: "ILS S'AGITENT !", subN: 'PLUS VITE !', plusCow: '+1 VACHE',
+    noDef: 'SANS DÉFENSE !', raidSub: 'ILS EMMÈNENT LES VACHES !', raidSubC: 'ENLÈVEMENT !',
+    cowSaved: 'VACHE SAUVÉE ! +100', landed: 'LES OVNIS ONT ATTERRI !', spilled: 'LAIT RENVERSÉ !', alert: 'ALERTE !',
+    abducted: 'VACHE ENLEVÉE !', triple: 'TRIPLE LAIT !', keys: 'FLÈCHES BOUGER · ESPACE TIRER', keysC: 'FLÈCHES · ESPACE',
+    score: 'SCORE', record: 'RECORD', tapPlay: 'TOUCHE POUR JOUER', pressEnter: 'APPUIE SUR ENTRÉE',
+    install: "INSTALLER L'APP", installC: 'INSTALLER', installBtn: 'INSTALLER', liked: 'ÇA TE PLAÎT ?',
+    installBody: 'INSTALLE-LE POUR JOUER EN PLEIN ÉCRAN ET SANS INTERNET', notNow: 'PLUS TARD', helpTitle: 'POUR INSTALLER',
+    ios1: '1. TOUCHE PARTAGER (LE CARRÉ AVEC LA FLÈCHE)', ios2: "2. CHOISIS 'SUR L'ÉCRAN D'ACCUEIL'",
+    and1: '1. OUVRE LE MENU DU NAVIGATEUR (LES 3 POINTS)', and2: "2. CHOISIS 'INSTALLER L'APPLICATION'",
+    tapClose: 'TOUCHE POUR FERMER', gameOver: 'FIN DE PARTIE', lostAll: 'ILS ONT EMMENÉ TOUTES LES VACHES !', lostAllC: 'PLUS DE VACHES !',
+    cowsSafe: 'VACHES SAUVÉES : {0}', newRec: 'NOUVEAU RECORD !', newRecWave: 'NOUVEAU RECORD ! VAGUE {0}',
+    tapCont: 'TOUCHE POUR CONTINUER', enterCont: 'ENTRÉE POUR CONTINUER',
+    cleared: 'VAGUE TERMINÉE !', clearedC: 'RÉUSSI !', bonus: 'BONUS LAIT +{0}', bonusC: 'BONUS +{0}',
+    fire: 'FEU', pause: 'PAUSE', tapScreen: "TOUCHE L'ÉCRAN", pCont: 'P POUR CONTINUER', language: 'LANGUE'
+  },
+  bn: {
+    wave: 'পর্ব {0}', sub1: 'দুধ বাঁচাও!', sub2: 'ঝাঁপিয়ে আক্রমণ!', sub3: 'বহর অস্থির!', subN: 'আরও দ্রুত!', plusCow: '+1 গরু',
+    noDef: 'কোনো প্রতিরক্ষা নেই!', raidSub: 'ওরা গরুগুলো নিয়ে যাচ্ছে!', raidSubC: 'গরু নিয়ে যাচ্ছে!',
+    cowSaved: 'গরু বাঁচল! +100', landed: 'মহাকাশযান নেমে পড়েছে!', spilled: 'দুধ পড়ে গেল!', alert: 'সতর্ক!',
+    abducted: 'গরু অপহৃত!', triple: 'তিনগুণ দুধ!', keys: 'তীর: চলা · স্পেস: গুলি', keysC: 'তীর · স্পেস',
+    score: 'স্কোর', record: 'রেকর্ড', tapPlay: 'খেলতে ট্যাপ করো', pressEnter: 'ENTER চাপো',
+    install: 'অ্যাপ ইনস্টল', installC: 'ইনস্টল', installBtn: 'ইনস্টল', liked: 'ভালো লেগেছে?',
+    installBody: 'পূর্ণ স্ক্রিনে ও ইন্টারনেট ছাড়া খেলতে ইনস্টল করো', notNow: 'এখন না', helpTitle: 'ইনস্টল করতে',
+    ios1: '1. শেয়ার ট্যাপ করো (উপরে তীরওয়ালা বাক্স)', ios2: "2. 'হোম স্ক্রিনে যোগ করুন' বেছে নাও",
+    and1: '1. ব্রাউজারের মেনু খোলো (৩টি বিন্দু)', and2: "2. 'অ্যাপ ইনস্টল করুন' বা 'হোম স্ক্রিনে যোগ করুন' বেছে নাও",
+    tapClose: 'বন্ধ করতে ট্যাপ করো', gameOver: 'খেলা শেষ', lostAll: 'ওরা সব গরু নিয়ে গেছে!', lostAllC: 'কোনো গরু নেই!',
+    cowsSafe: 'নিরাপদ গরু: {0}', newRec: 'নতুন রেকর্ড!', newRecWave: 'নতুন রেকর্ড! পর্ব {0}',
+    tapCont: 'চালিয়ে যেতে ট্যাপ করো', enterCont: 'চালিয়ে যেতে ENTER',
+    cleared: 'পর্ব পার!', clearedC: 'পার!', bonus: 'দুধ বোনাস +{0}', bonusC: 'বোনাস +{0}',
+    fire: 'গুলি', pause: 'বিরতি', tapScreen: 'স্ক্রিনে ট্যাপ করো', pCont: 'চালিয়ে যেতে P', language: 'ভাষা'
+  },
+  pt: {
+    wave: 'ONDA {0}', sub1: 'PROTEJA O LEITE!', sub2: 'ATAQUES EM MERGULHO!', sub2C: 'MERGULHO!',
+    sub3: 'A FROTA SE AGITA!', sub3C: 'SE AGITAM!', subN: 'MAIS RÁPIDO!', plusCow: '+1 VAQUINHA',
+    noDef: 'SEM DEFESA!', raidSub: 'ESTÃO LEVANDO AS VAQUINHAS!', raidSubC: 'LEVAM AS VACAS!',
+    cowSaved: 'VACA SALVA! +100', landed: 'AS NAVES POUSARAM!', spilled: 'LEITE DERRAMADO!', alert: 'ALERTA!',
+    abducted: 'VACA ABDUZIDA!', triple: 'LEITE TRIPLO!', keys: 'SETAS MOVER · ESPAÇO ATIRA', keysC: 'SETAS · ESPAÇO',
+    score: 'PONTOS', record: 'RECORDE', tapPlay: 'TOQUE PARA JOGAR', pressEnter: 'APERTE ENTER',
+    install: 'INSTALAR APP', installC: 'INSTALAR', installBtn: 'INSTALAR', liked: 'GOSTOU?',
+    installBody: 'INSTALE PARA JOGAR EM TELA CHEIA E SEM INTERNET', notNow: 'AGORA NÃO', helpTitle: 'PARA INSTALAR',
+    ios1: '1. TOQUE EM COMPARTILHAR (O QUADRADO COM A SETA)', ios2: "2. ESCOLHA 'ADICIONAR À TELA DE INÍCIO'",
+    and1: '1. ABRA O MENU DO NAVEGADOR (OS 3 PONTOS)', and2: "2. ESCOLHA 'INSTALAR APP' OU 'ADICIONAR À TELA INICIAL'",
+    tapClose: 'TOQUE PARA FECHAR', gameOver: 'FIM DE JOGO', lostAll: 'LEVARAM TODAS AS VACAS!', lostAllC: 'SEM VAQUINHAS!',
+    cowsSafe: 'VACAS A SALVO: {0}', newRec: 'NOVO RECORDE!', newRecWave: 'NOVO RECORDE! ONDA {0}',
+    tapCont: 'TOQUE PARA CONTINUAR', tapContC: 'CONTINUAR', enterCont: 'ENTER PARA CONTINUAR',
+    cleared: 'ONDA SUPERADA!', clearedC: 'SUPERADA!', bonus: 'BÔNUS DE LEITE +{0}', bonusC: 'BÔNUS +{0}',
+    fire: 'FOGO', pause: 'PAUSA', tapScreen: 'TOQUE NA TELA', pCont: 'P PARA CONTINUAR', language: 'IDIOMA'
+  },
+  ru: {
+    wave: 'ВОЛНА {0}', sub1: 'ЗАЩИТИ МОЛОКО!', sub2: 'АТАКИ В ПИКЕ!', sub2C: 'В ПИКЕ!', sub3: 'ФЛОТ В ТРЕВОГЕ!',
+    subN: 'БЫСТРЕЕ!', plusCow: '+1 КОРОВКА', noDef: 'БЕЗ ЗАЩИТЫ!', raidSub: 'ОНИ ЗАБИРАЮТ КОРОВОК!', raidSubC: 'КОРОВОК КРАДУТ!',
+    cowSaved: 'КОРОВА СПАСЕНА! +100', landed: 'КОРАБЛИ ПРИЗЕМЛИЛИСЬ!', spilled: 'МОЛОКО ПРОЛИТО!', alert: 'ТРЕВОГА!',
+    abducted: 'КОРОВУ ПОХИТИЛИ!', triple: 'ТРОЙНОЕ МОЛОКО!', keys: 'СТРЕЛКИ - ХОД · ПРОБЕЛ - ОГОНЬ', keysC: 'СТРЕЛКИ · ПРОБЕЛ',
+    score: 'ОЧКИ', record: 'РЕКОРД', tapPlay: 'НАЖМИ И ИГРАЙ', pressEnter: 'НАЖМИ ENTER',
+    install: 'УСТАНОВИТЬ', installC: 'УСТАНОВИТЬ', installBtn: 'УСТАНОВИТЬ', liked: 'НРАВИТСЯ?',
+    installBody: 'УСТАНОВИ, ЧТОБЫ ИГРАТЬ НА ВЕСЬ ЭКРАН БЕЗ ИНТЕРНЕТА', notNow: 'НЕ СЕЙЧАС', helpTitle: 'УСТАНОВКА',
+    ios1: "1. НАЖМИ 'ПОДЕЛИТЬСЯ' (КВАДРАТ СО СТРЕЛКОЙ)", ios2: "2. ВЫБЕРИ 'НА ЭКРАН ДОМОЙ'",
+    and1: '1. ОТКРОЙ МЕНЮ БРАУЗЕРА (3 ТОЧКИ)', and2: "2. ВЫБЕРИ 'УСТАНОВИТЬ ПРИЛОЖЕНИЕ'",
+    tapClose: 'НАЖМИ, ЧТОБЫ ЗАКРЫТЬ', gameOver: 'ИГРА ОКОНЧЕНА', lostAll: 'ОНИ ЗАБРАЛИ ВСЕХ КОРОВ!', lostAllC: 'КОРОВ НЕ ОСТАЛОСЬ!',
+    cowsSafe: 'КОРОВ СПАСЕНО: {0}', newRec: 'НОВЫЙ РЕКОРД!', newRecWave: 'НОВЫЙ РЕКОРД! ВОЛНА {0}',
+    tapCont: 'НАЖМИ, ЧТОБЫ ПРОДОЛЖИТЬ', tapContC: 'ПРОДОЛЖИТЬ', enterCont: 'ENTER - ПРОДОЛЖИТЬ',
+    cleared: 'ВОЛНА ПРОЙДЕНА!', clearedC: 'ПРОЙДЕНО!', bonus: 'МОЛОЧНЫЙ БОНУС +{0}', bonusC: 'БОНУС +{0}',
+    fire: 'ОГОНЬ', pause: 'ПАУЗА', tapScreen: 'НАЖМИ НА ЭКРАН', pCont: 'P - ПРОДОЛЖИТЬ', language: 'ЯЗЫК'
+  },
+  ur: {
+    wave: 'لہر {0}', sub1: 'دودھ بچاؤ!', sub2: 'غوطہ حملے!', sub3: 'بیڑا بے چین ہے!', subN: 'اور تیز!', plusCow: '+1 گائے',
+    noDef: 'کوئی دفاع نہیں!', raidSub: 'وہ گائیں لے جا رہے ہیں!',
+    cowSaved: 'گائے بچ گئی! +100', landed: 'جہاز اتر گئے!', spilled: 'دودھ گر گیا!', alert: 'خبردار!',
+    abducted: 'گائے اغوا ہو گئی!', triple: 'تین گنا دودھ!', keys: 'تیر: چلیں · اسپیس: فائر', keysC: 'تیر · اسپیس',
+    score: 'اسکور', record: 'ریکارڈ', tapPlay: 'کھیلنے کے لیے چھوئیں', pressEnter: 'ENTER دبائیں',
+    install: 'ایپ انسٹال کریں', installC: 'انسٹال', installBtn: 'انسٹال', liked: 'پسند آیا؟',
+    installBody: 'پوری اسکرین پر اور بغیر انٹرنیٹ کھیلنے کے لیے انسٹال کریں', notNow: 'ابھی نہیں', helpTitle: 'انسٹال کرنے کے لیے',
+    ios1: '1. شیئر پر ٹیپ کریں (اوپر تیر والا خانہ)', ios2: "2. 'ہوم اسکرین میں شامل کریں' چنیں",
+    and1: '1. براؤزر کا مینو کھولیں (3 نقطے)', and2: "2. 'ایپ انسٹال کریں' یا 'ہوم اسکرین میں شامل کریں' چنیں",
+    tapClose: 'بند کرنے کے لیے چھوئیں', gameOver: 'کھیل ختم', lostAll: 'وہ ساری گائیں لے گئے!', lostAllC: 'کوئی گائے نہیں بچی!',
+    cowsSafe: 'محفوظ گائیں: {0}', newRec: 'نیا ریکارڈ!', newRecWave: 'نیا ریکارڈ! لہر {0}',
+    tapCont: 'جاری رکھنے کے لیے چھوئیں', enterCont: 'جاری رکھنے کے لیے ENTER',
+    cleared: 'لہر مکمل!', clearedC: 'شاباش!', bonus: 'دودھ بونس +{0}', bonusC: 'بونس +{0}',
+    fire: 'فائر', pause: 'وقفہ', tapScreen: 'اسکرین کو چھوئیں', pCont: 'جاری رکھنے کے لیے P', language: 'زبان'
+  }
+};
+function detectLang() {
+  const saved = store.get('vaquitasLang', '');
+  if (LANGS.includes(saved)) return saved;
+  for (const l of navigator.languages || [navigator.language || '']) {
+    const c = String(l).slice(0, 2).toLowerCase();
+    if (LANGS.includes(c)) return c;
+  }
+  return 'en';
+}
+let lang = 'es', RTL = false;
+function setLang(code, save = false) {
+  lang = code;
+  RTL = code === 'ar' || code === 'ur';
+  document.documentElement.lang = code;
+  if (save) store.set('vaquitasLang', code);
+}
+setLang(detectLang());
+// Texto traducido: tr('wave', 3). trc usa la versión corta en celular vertical si existe.
+function tr(k, ...a) {
+  const s = TX[lang][k] ?? TX.en[k] ?? k;
+  return a.length ? s.replace('{0}', a[0]) : s;
+}
+const trc = (k, ...a) => COMPACT && TX[lang][k + 'C'] !== undefined ? tr(k + 'C', ...a) : tr(k, ...a);
+
+// ======================================================================
 //  Fuente pixel 5x7
 // ======================================================================
 const FONT_SRC = {
@@ -382,18 +578,63 @@ const FONT_SRC = {
   '·': '00000 00000 00000 00100 00000 00000 00000',
   '(': '00010 00100 01000 01000 01000 00100 00010', ')': '01000 00100 00010 00010 00010 00100 01000'
 };
+// Cirílico (ruso): las letras iguales a las latinas reutilizan su dibujo
+Object.assign(FONT_SRC, {
+  'Б': '11111 10000 10000 11110 10001 10001 11110', 'Г': '11111 10000 10000 10000 10000 10000 10000',
+  'Д': '01111 01001 01001 01001 01001 11111 10001', 'Ж': '10101 10101 10101 01110 10101 10101 10101',
+  'З': '01110 10001 00001 00110 00001 10001 01110', 'И': '10001 10001 10011 10101 11001 10001 10001',
+  'Й': '01010 00100 10001 10011 10101 11001 10001', 'Л': '00111 01001 01001 01001 01001 01001 10001',
+  'П': '11111 10001 10001 10001 10001 10001 10001', 'У': '10001 10001 10001 01111 00001 10001 01110',
+  'Ф': '00100 01110 10101 10101 10101 01110 00100', 'Ц': '10010 10010 10010 10010 10010 11111 00001',
+  'Ч': '10001 10001 10001 01111 00001 00001 00001', 'Ш': '10101 10101 10101 10101 10101 10101 11111',
+  'Щ': '10101 10101 10101 10101 10101 11111 00001', 'Ъ': '11000 01000 01000 01110 01001 01001 01110',
+  'Ы': '10001 10001 10001 11101 10011 10011 11101', 'Ь': '10000 10000 10000 11110 10001 10001 11110',
+  'Э': '01110 10001 00001 00111 00001 10001 01110', 'Ю': '10010 10101 10101 11101 10101 10101 10010',
+  'Я': '01111 10001 10001 01111 00101 01001 10001', 'Ё': '01010 00000 11111 10000 11110 10000 11111'
+});
+for (const [cy, la] of ['АA', 'ВB', 'ЕE', 'КK', 'МM', 'НH', 'ОO', 'РP', 'СC', 'ТT', 'ХX']) FONT_SRC[cy] = FONT_SRC[la];
 const FONT = {};
 for (const k in FONT_SRC) FONT[k] = FONT_SRC[k].split(' ').map(s => parseInt(s, 2));
 
+// Mayúsculas sin acentos (la fuente pixel no los tiene), pero conserva Ñ, Й y Ё
 const norm = s => String(s).toUpperCase()
-  .replace(/[ÁÀ]/g, 'A').replace(/[ÉÈ]/g, 'E').replace(/[ÍÌ]/g, 'I')
-  .replace(/[ÓÒ]/g, 'O').replace(/[ÚÙÜ]/g, 'U');
-const textWidth = (s, scale = 1) => norm(s).length * 6 * scale - scale;
+  .replace(/Ñ/g, '\u0001').replace(/Й/g, '\u0002').replace(/Ё/g, '\u0003')
+  .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .replace(/\u0001/g, 'Ñ').replace(/\u0002/g, 'Й').replace(/\u0003/g, 'Ё');
+// Chino, hindi, árabe, bengalí y urdu no caben en 5x7: esos textos usan la fuente del sistema
+const pixelCache = new Map();
+function isPixel(s) {
+  let v = pixelCache.get(s);
+  if (v === undefined) {
+    v = [...norm(s)].every(ch => ch === ' ' || FONT[ch]);
+    if (pixelCache.size > 500) pixelCache.clear();
+    pixelCache.set(s, v);
+  }
+  return v;
+}
+const SYS_FONT = 'system-ui, "Segoe UI", "Nirmala UI", "Microsoft YaHei", "Noto Sans", sans-serif';
+const sysFont = scale => `bold ${7.5 * scale}px ${SYS_FONT}`;
+const measureCtx = document.createElement('canvas').getContext('2d');
+function textWidth(s, scale = 1) {
+  if (isPixel(s)) return [...norm(s)].length * 6 * scale - scale;
+  measureCtx.font = sysFont(scale);
+  return measureCtx.measureText(s).width;
+}
 
 function drawTextTo(g, s, x, y, color, scale = 1, align = 'left') {
-  s = norm(s);
-  if (align === 'center') x = Math.round(x - textWidth(s, scale) / 2);
-  else if (align === 'right') x = Math.round(x - textWidth(s, scale));
+  s = String(s);
+  if (!isPixel(s)) {
+    g.font = sysFont(scale);
+    g.fillStyle = color;
+    g.textAlign = align;
+    g.textBaseline = 'middle';
+    g.direction = RTL ? 'rtl' : 'ltr';
+    g.fillText(s, x, y + 3.5 * scale);
+    return;
+  }
+  s = [...norm(s)];
+  if (align === 'center') x = Math.round(x - (s.length * 6 * scale - scale) / 2);
+  else if (align === 'right') x = Math.round(x - (s.length * 6 * scale - scale));
   g.fillStyle = color;
   for (let i = 0; i < s.length; i++) {
     const glyph = FONT[s[i]];
@@ -980,8 +1221,7 @@ let paused = false;
 let clock = 0, stateTimer = 0;
 let score = 0, level = 1, lives = 3;
 let hi = loadHi();
-let hiBefore = hi, newRecord = false, gameOverReason = null;
-const LOST_ALL = { text: '¡SE LLEVARON A TODAS LAS VACAS!', short: '¡SIN VAQUITAS!' };
+let hiBefore = hi, newRecord = false, gameOverReason = null;   // clave de traducción
 let shake = 0, banner = null, waveBonus = 0;
 let fireT = 0, abductT = 0, motherT = 0, diveT = 0;
 let truckLost = false;
@@ -1147,10 +1387,7 @@ function startWave() {
   abductT = (level === 1 ? rand(6, 9) : rand(3, 5)) / DF.abduct;
   diveT = rand(2.5, 4) / DF.dive;
   motherT = rand(14, 22);
-  const subs = COMPACT
-    ? { 1: '¡CUIDA LA LECHE!', 2: '¡EN PICADA!', 3: '¡SE AGITAN!' }
-    : { 1: '¡PROTEGE LA LECHE!', 2: '¡ATAQUES EN PICADA!', 3: '¡LA FLOTA SE AGITA!' };
-  banner = { text: 'OLEADA ' + level, sub: subs[level] || '¡MAS RAPIDO!', t: level === 1 ? 2.6 : 2.2 };
+  banner = { text: tr('wave', level), sub: trc(level <= 3 ? 'sub' + level : 'subN'), t: level === 1 ? 2.6 : 2.2 };
 }
 
 function nextWave() {
@@ -1160,7 +1397,7 @@ function nextWave() {
     if (lost) {
       Object.assign(lost, newCow(Math.round(rand(10, W - 22))));
       lost.y = -10; lost.state = 'falling';
-      floater('+1 VAQUITA', lost.x + 6, GROUND_Y - 12, PAL.n, 2);
+      floater(tr('plusCow'), lost.x + 6, GROUND_Y - 12, PAL.n, 2);
     }
   }
   startWave();
@@ -1188,8 +1425,8 @@ function startRaid() {
   player.triple = 0;
   for (const i of inv) if (i.dive) i.dive.phase = 'return';
   // en celular la franja se va antes de que las naves suban con las vacas, para no taparlas
-  banner = COMPACT ? { text: '¡SIN DEFENSA!', sub: '¡SE LAS LLEVAN!', t: 2.5 }
-    : { text: '¡SIN DEFENSA!', sub: '¡SE LLEVAN A LAS VAQUITAS!', t: 99, y: CY - 60 };
+  banner = COMPACT ? { text: tr('noDef'), sub: trc('raidSub'), t: 2.5 }
+    : { text: tr('noDef'), sub: tr('raidSub'), t: 99, y: CY - 60 };
   SFX.alarm();
   const targets = cows.filter(c => (c.state === 'free' || c.state === 'falling') && !c.target);
   targets.forEach((cow, k) => {
@@ -1207,11 +1444,11 @@ function startRaid() {
     cow.target = a;
     abductors.push(a);
   });
-  if (cowsLeft() === 0 || abductors.length === 0) gameOver(LOST_ALL);
+  if (cowsLeft() === 0 || abductors.length === 0) gameOver('lostAll');
 }
 
 function requestStart() {
-  if (invite || helpOpen) return;
+  if (invite || helpOpen || langOpen) return;
   if (state === 'title') newGame();
   else if (state === 'gameover' && stateTimer > 1) toTitle();
 }
@@ -1385,7 +1622,7 @@ function killAbductor(a) {
     if (c.state === 'carried') { c.x = a.x; c.y = a.y + 6; }   // sale expulsada de la nave
     c.state = 'falling'; c.vy = -40; c.scale = 1; c.rot = 0;
     addScore(100);
-    floater('¡VACA SALVADA! +100', c.x + 6, Math.max(30, c.y - 10), PAL.c, 1.8);
+    floater(tr('cowSaved'), c.x + 6, Math.max(30, c.y - 10), PAL.c, 1.8);
     SFX.saved();
   }
 }
@@ -1427,7 +1664,7 @@ function updateFormation(dt) {
     eraseShieldRect(x, y, 12, 8);
     if (y + 8 >= PLAYER_Y) {
       burst(player.x + 10, player.y + 5, [PAL.b, PAL.w, PAL.w, '#ffb347'], 40, 80, 90);
-      floater('¡LAS NAVES ATERRIZARON!', W / 2, CY + 26, PAL.r, 2);
+      floater(tr('landed'), W / 2, CY + 26, PAL.r, 2);
       shake = 5; SFX.die();
       startRaid();
       return;
@@ -1545,7 +1782,7 @@ function hitPlayer() {
   burst(player.x + 10, player.y + 5, [PAL.b, PAL.B, '#ffb347', PAL.c], 30, 80, 90);
   burst(player.x + 7, player.y + 4, [PAL.w, PAL.w, '#dfe8ff'], 44, 70, 140);   // leche derramada
   splats.push({ x: player.x + 4, y: player.y, t: 0.3 });
-  floater('¡LECHE DERRAMADA!', player.x + 10, player.y - 10, PAL.w, 1.6);
+  floater(tr('spilled'), player.x + 10, player.y - 10, PAL.w, 1.6);
   shake = 5;
   SFX.die();
 }
@@ -1575,7 +1812,7 @@ function startAbduction() {
   Object.assign(a, newAbductor(a, cow));
   cow.target = a;
   abductors.push(a);
-  floater('¡ALERTA!', a.x + 6, a.y - 6, PAL.y, 1);
+  floater(tr('alert'), a.x + 6, a.y - 6, PAL.y, 1);
   SFX.alarm();
   return true;
 }
@@ -1653,14 +1890,14 @@ function updateAbductions(dt, raid = false) {
       if (a.y < -30) {
         a.dead = true;
         c.state = 'gone'; c.target = null; c.scale = 1; c.rot = 0;
-        if (!raid) floater('¡VACA ABDUCIDA!', clamp(a.x + 6, 50, W - 50), 30, PAL.r, 1.8);
+        if (!raid) floater(tr('abducted'), clamp(a.x + 6, 50, W - 50), 30, PAL.r, 1.8);
         shake = 2;
-        if (cowsLeft() === 0) { gameOver(LOST_ALL); return; }
+        if (cowsLeft() === 0) { gameOver('lostAll'); return; }
       }
     }
   }
   abductors = abductors.filter(a => !a.dead);
-  if (raid && !abductors.length && state === 'raid') gameOver(LOST_ALL);
+  if (raid && !abductors.length && state === 'raid') gameOver('lostAll');
 }
 
 function updateCows(dt) {
@@ -1748,7 +1985,7 @@ function updatePowerups(dt) {
     if (p.state !== 'fade' && overlap(p.x, p.y, 6, 8, player.x, player.y, TRUCK_W, 11)) {
       p.dead = true;
       player.triple = DF.triple;
-      floater('¡LECHE TRIPLE!', player.x + TRUCK_W / 2, player.y - 8, PAL.c, 1.6);
+      floater(tr('triple'), player.x + TRUCK_W / 2, player.y - 8, PAL.c, 1.6);
       burst(p.x + 3, p.y + 4, [PAL.w, PAL.b, PAL.c], 18, 50, 40);
       SFX.power();
     }
@@ -1945,10 +2182,17 @@ function drawParticles() {
 function wrapText(s, scale, maxW) {
   const lines = [];
   let cur = '';
-  for (const w of norm(s).split(' ')) {
+  for (const w of (isPixel(s) ? norm(s) : String(s)).split(' ')) {
     const t = cur ? cur + ' ' + w : w;
     if (!cur || textWidth(t, scale) <= maxW) cur = t;
     else { lines.push(cur); cur = w; }
+    if (!isPixel(cur) && textWidth(cur, scale) > maxW) {   // palabra sin espacios (chino) demasiado larga
+      let part = '';
+      for (const ch of cur) {
+        if (part && textWidth(part + ch, scale) > maxW) { lines.push(part); part = ch; } else part += ch;
+      }
+      cur = part;
+    }
   }
   if (cur) lines.push(cur);
   return lines;
@@ -1968,7 +2212,8 @@ function drawFloaters() {
 }
 
 // Botones de pausa/sonido arriba al centro
-const topBtns = () => [{ id: 'pause', x: W / 2 - 13, y: 1.5, w: 11, h: 9 }, { id: 'mute', x: W / 2 + 2, y: 1.5, w: 11, h: 9 }];
+const topBtns = () => [state === 'title' ? { id: 'lang', x: W / 2 - 19, y: 1.5, w: 17, h: 9 } : { id: 'pause', x: W / 2 - 13, y: 1.5, w: 11, h: 9 },
+  { id: 'mute', x: W / 2 + 2, y: 1.5, w: 11, h: 9 }];
 function drawIconPause(cx, cy, s) {
   ctx.fillStyle = PAL.w;
   if (paused) {               // triángulo de "continuar"
@@ -1984,13 +2229,13 @@ function drawIconSound(cx, cy) {
 }
 function drawTopButtons() {
   for (const b of topBtns()) {
-    if (state === 'title' && b.id === 'pause') continue;
     ctx.fillStyle = 'rgba(13,26,74,0.85)';
     ctx.fillRect(b.x, b.y, b.w, b.h);
     ctx.fillStyle = '#2a3d78';
     ctx.fillRect(b.x, b.y, b.w, 0.5); ctx.fillRect(b.x, b.y + b.h - 0.5, b.w, 0.5);
     ctx.fillRect(b.x, b.y, 0.5, b.h); ctx.fillRect(b.x + b.w - 0.5, b.y, 0.5, b.h);
     if (b.id === 'pause') drawIconPause(b.x + b.w / 2, b.y + b.h / 2, 2.5);
+    else if (b.id === 'lang') drawText(lang.toUpperCase(), b.x + b.w / 2, b.y + 1, PAL.w, 1, 'center');
     else drawIconSound(b.x + b.w / 2, b.y + b.h / 2);
   }
 }
@@ -1998,7 +2243,7 @@ function drawTopButtons() {
 function drawHUD() {
   drawTopButtons();
   if (state === 'title') {
-    if (!DECK_H) drawText(W >= 250 ? 'FLECHAS MOVER · ESPACIO DISPARA' : 'FLECHAS · ESPACIO', W / 2, H - 9, '#4f6299', 1, 'center');
+    if (!DECK_H) drawText(textWidth(tr('keys')) <= W - 8 ? tr('keys') : tr('keysC'), W / 2, H - 9, '#4f6299', 1, 'center');
     return;
   }
   const shownHi = Math.max(hi, score);
@@ -2007,10 +2252,10 @@ function drawHUD() {
     drawText(pad(score), 4, 3, PAL.w);
     drawText(pad(shownHi), W - 4, 3, '#7fb2ff', 1, 'right');
   } else {
-    drawText('PUNTOS', 4, 3, '#7fb2ff');
-    drawText(pad(score), 46, 3, PAL.w);
+    drawText(tr('score'), 4, 3, '#7fb2ff');
+    drawText(pad(score), 4 + Math.ceil(textWidth(tr('score'))) + 7, 3, PAL.w);
     drawText(pad(shownHi), W - 4, 3, PAL.w, 1, 'right');
-    drawText('RECORD', W - 4 - 42, 3, '#7fb2ff', 1, 'right');
+    drawText(tr('record'), W - 4 - 42, 3, '#7fb2ff', 1, 'right');
   }
 
   for (let i = 0; i < Math.min(lives, COMPACT ? 3 : 4); i++) drawSprite(SPR.truck, 4 + i * (COMPACT ? 21 : 23), H - 12);
@@ -2019,7 +2264,7 @@ function drawHUD() {
     drawText(n, W - 4, H - 9, '#9fe39f', 1, 'right');
     drawSprite(SPR.ufo[0][0], W - 4 - textWidth(n) - 14, H - 11);
   } else {
-    drawText('OLEADA ' + level, W - 4, H - 9, '#9fe39f', 1, 'right');
+    drawText(tr('wave', level), W - 4, H - 9, '#9fe39f', 1, 'right');
     if (player.triple > 0) {
       drawSprite(SPR.carton, W / 2 - 12, H - 11);
       drawText('X3 ' + Math.ceil(player.triple), W / 2 - 3, H - 9, PAL.c);
@@ -2044,7 +2289,7 @@ function drawUIButton(b, primary) {
 // Inicio minimalista: logo, indicación para jugar, récord (si existe) y botón de instalar
 function titleLayout() {
   const logo = COMPACT ? LOGO_S : LOGO, sub = COMPACT ? SUBLOGO_S : SUBLOGO, gap = COMPACT ? 12 : 26;
-  const btn = canInstall() ? uiBtn(COMPACT ? 'INSTALAR' : 'INSTALAR APP', true) : null;
+  const btn = canInstall() ? uiBtn(trc('install'), true) : null;
   const recStep = COMPACT ? 12 : 16, btnGap = COMPACT ? 6 : 12;
   const recH = hi > 0 ? recStep : 0;
   const blockH = logo.lh + 4 + sub.lh + gap + 7 + recH + (btn ? btnGap + 13 : 0);
@@ -2061,21 +2306,21 @@ function drawTitle() {
   const L = titleLayout();
   blitLogo(L.logo, Math.round((W - L.logo.lw) / 2), L.logoY);
   blitLogo(L.sub, Math.round((W - L.sub.lw) / 2), L.subY);
-  if (!invite && !helpOpen) {
+  if (!invite && !helpOpen && !langOpen) {
     ctx.globalAlpha = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(clock * 3.2));   // respira en vez de parpadear
-    drawTextShadow(touchMode ? 'TOCA PARA JUGAR' : 'PRESIONA ENTER', W / 2, L.promptY, PAL.w, 1, 'center');
+    drawTextShadow(touchMode ? tr('tapPlay') : tr('pressEnter'), W / 2, L.promptY, PAL.w, 1, 'center');
     ctx.globalAlpha = 1;
   }
-  if (hi > 0) drawText('RECORD ' + pad(hi), W / 2, L.recY, '#4f6299', 1, 'center');
+  if (hi > 0) drawText(tr('record') + ' ' + pad(hi), W / 2, L.recY, '#4f6299', 1, 'center');
   if (L.btn) drawUIButton(L.btn, false);
 }
 
 // Invitación a instalar (celular, después de jugar una partida)
 function inviteLayout() {
   const maxW = W - panelM() * 2 - 10;
-  const hs = titleS(), head = wrapText('¿TE GUSTO?', hs, maxW);
-  const body = wrapText('INSTALALO PARA JUGAR A PANTALLA COMPLETA Y SIN INTERNET', 1, maxW);
-  const bI = uiBtn('INSTALAR', true), bL = uiBtn('AHORA NO');
+  const hs = titleS(), head = wrapText(tr('liked'), hs, maxW);
+  const body = wrapText(tr('installBody'), 1, maxW);
+  const bI = uiBtn(tr('installBtn'), true), bL = uiBtn(tr('notNow'));
   const stack = bI.w + bL.w + 6 > maxW;
   const textH = head.length * lineH(hs) + 4 + body.length * lineH(1);
   const total = textH + 8 + (stack ? 30 : 13);
@@ -2096,9 +2341,33 @@ function drawInvite() {
 }
 function drawInstallHelp() {
   const steps = IS_IOS
-    ? ['1. TOCA COMPARTIR (EL CUADRO CON LA FLECHA HACIA ARRIBA)', "2. ELIGE 'AGREGAR A INICIO'"]
-    : ['1. ABRE EL MENU DEL NAVEGADOR (LOS 3 PUNTOS)', "2. ELIGE 'INSTALAR APP' O 'AGREGAR A PANTALLA DE INICIO'"];
-  drawPanelItems([['PARA INSTALAR', titleS(), PAL.y], ...steps.map(t => [t, 1, PAL.w]), ['TOCA PARA CERRAR', 1, '#7f95c9']]);
+    ? [tr('ios1'), tr('ios2')]
+    : [tr('and1'), tr('and2')];
+  drawPanelItems([[tr('helpTitle'), titleS(), PAL.y], ...steps.map(t => [t, 1, PAL.w]), [tr('tapClose'), 1, '#7f95c9']]);
+}
+
+// Selector de idioma: lista con el nombre de cada idioma en su propia escritura
+let langOpen = false, langSel = 0;
+function openLang() { langOpen = true; langSel = LANGS.indexOf(lang); }
+function pickLang(code) { setLang(code, true); langOpen = false; }
+function langLayout() {
+  const rowH = 11, w = Math.min(W - 24, 90), head = lineH(titleS()) + 4;
+  const total = head + LANGS.length * rowH;
+  const y0 = Math.max(16, Math.round(CY - total / 2));
+  const rows = LANGS.map((code, i) => ({ code, x: Math.round(W / 2 - w / 2), y: y0 + head + i * rowH, w, h: rowH - 1 }));
+  return { y0, total, rows };
+}
+function drawLangPicker() {
+  const L = langLayout();
+  ctx.fillStyle = 'rgba(4,8,24,0.5)';
+  ctx.fillRect(-OX, 0, VW, H);
+  drawPanel(L.y0 - 9, L.y0 + L.total + 7);
+  drawTextShadow(tr('language'), W / 2, L.y0, PAL.y, titleS(), 'center');
+  L.rows.forEach((r, i) => {
+    const cur = r.code === lang;
+    if (cur || i === langSel) roundRect(r.x, r.y, r.w, r.h, cur ? '#1f5fd1' : '#16307a');
+    drawTextShadow(LANG_NAMES[r.code], W / 2, r.y + 1.5, cur ? PAL.w : '#9ccaff', 1, 'center');
+  });
 }
 
 const panelM = () => COMPACT ? 4 : 14;
@@ -2132,25 +2401,24 @@ function drawGameOver() {
     // tarjeta de resultados: oscurece todo y deja solo lo esencial, con los puntos en grande
     ctx.fillStyle = 'rgba(4,8,24,0.6)';
     ctx.fillRect(-OX, 0, VW, H);
-    const items = [['FIN DEL JUEGO', titleS(), PAL.r]];
-    if (gameOverReason) items.push([gameOverReason.short, 1, PAL.y]);
-    items.push(['PUNTOS', 1, '#7fb2ff'], [pad(score), 1.5, PAL.w], ['OLEADA ' + level, 1, '#9fe39f']);
-    if (newRecord) items.push(['¡NUEVO RECORD!', 1, PAL.c, blinkRec]);
-    items.push(['TOCA PARA SEGUIR', 1, PAL.y, blinkGo]);
+    const items = [[tr('gameOver'), titleS(), PAL.r]];
+    if (gameOverReason) items.push([trc(gameOverReason), 1, PAL.y]);
+    items.push([tr('score'), 1, '#7fb2ff'], [pad(score), 1.5, PAL.w], [tr('wave', level), 1, '#9fe39f']);
+    if (newRecord) items.push([tr('newRec'), 1, PAL.c, blinkRec]);
+    items.push([trc('tapCont'), 1, PAL.y, blinkGo]);
     drawPanelItems(items);
     return;
   }
-  const items = [['FIN DEL JUEGO', 2, PAL.r]];
-  if (gameOverReason) items.push([gameOverReason.text, 1, PAL.y]);
-  items.push(['PUNTOS ' + pad(score), 1, PAL.w], ['VAQUITAS A SALVO: ' + cowsLeft(), 1, '#9fe39f']);
-  if (newRecord) items.push(['¡NUEVO RECORD! OLEADA ' + level, 1, PAL.c, blinkRec]);
-  items.push([touchMode ? 'TOCA PARA CONTINUAR' : 'ENTER PARA CONTINUAR', 1, PAL.y, blinkGo]);
+  const items = [[tr('gameOver'), 2, PAL.r]];
+  if (gameOverReason) items.push([tr(gameOverReason), 1, PAL.y]);
+  items.push([tr('score') + ' ' + pad(score), 1, PAL.w], [tr('cowsSafe', cowsLeft()), 1, '#9fe39f']);
+  if (newRecord) items.push([tr('newRecWave', level), 1, PAL.c, blinkRec]);
+  items.push([touchMode ? tr('tapCont') : tr('enterCont'), 1, PAL.y, blinkGo]);
   drawPanelItems(items);
 }
 
 function drawLevelClear() {
-  drawPanelItems(COMPACT ? [['¡SUPERADA!', titleS(), PAL.y], ['BONO +' + waveBonus, 1, PAL.c]]
-    : [['¡OLEADA SUPERADA!', 2, PAL.y], ['BONO LECHERO +' + waveBonus, 1, PAL.c]]);
+  drawPanelItems([[trc('cleared'), titleS(), PAL.y], [trc('bonus', waveBonus), 1, PAL.c]]);
 }
 
 // Avisos de la partida (oleada nueva, sin defensa)
@@ -2158,15 +2426,17 @@ function drawBanner() {
   const raid = state === 'raid', blink = !raid || Math.floor(clock * 3) % 3;
   if (COMPACT) {
     // franja de un renglón: arriba de las pacas, o bajo el marcador durante el ataque final
-    const ts = titleS(), h = lineH(ts) + lineH(1) + 6;
+    const ts = titleS(), big = wrapText(banner.text, ts, VW - 6), small = wrapText(banner.sub, 1, VW - 6);
+    const h = big.length * lineH(ts) + small.length * lineH(1) + 6;
     const y0 = raid ? 13 : SHIELD_Y - h - 3;
     ctx.globalAlpha = Math.min(1, banner.t / 0.4);   // se desvanece al final
     ctx.fillStyle = 'rgba(4,8,24,0.75)';
     ctx.fillRect(-OX, y0, VW, h);
     ctx.fillStyle = raid ? PAL.r : PAL.b;
     ctx.fillRect(-OX, y0, VW, 0.5); ctx.fillRect(-OX, y0 + h - 0.5, VW, 0.5);
-    if (blink) drawTextShadow(banner.text, W / 2, y0 + 3, raid ? PAL.r : PAL.w, ts, 'center');
-    drawTextShadow(banner.sub, W / 2, y0 + 3 + lineH(ts), PAL.y, 1, 'center');
+    if (blink) big.forEach((l, k) => drawTextShadow(l, W / 2, y0 + 3 + k * lineH(ts), raid ? PAL.r : PAL.w, ts, 'center'));
+    const sy = y0 + 3 + big.length * lineH(ts);
+    small.forEach((l, k) => drawTextShadow(l, W / 2, sy + k * lineH(1), PAL.y, 1, 'center'));
     ctx.globalAlpha = 1;
     return;
   }
@@ -2225,7 +2495,7 @@ function drawDeck() {
         ctx.fillRect(snap(xx), snap(cy - hh), 0.5, Math.max(0.5, snap(hh * 2)));
       }
     } else if (b.id === 'fire') {
-      drawTextShadow('FUEGO', cx, Math.round(cy - 3.5), PAL.w, 1, 'center', '#6e1514');
+      drawTextShadow(tr('fire'), cx, Math.round(cy - 3.5), PAL.w, 1, 'center', '#6e1514');
     } else if (b.id === 'pause') drawIconPause(cx, cy, 2.5);
     else drawIconSound(cx, cy);
   }
@@ -2257,10 +2527,11 @@ function render() {
   drawFloaters();
   drawHUD();
   if (state === 'title') drawTitle();
+  if (langOpen) drawLangPicker();
   if (banner && !paused && (state === 'playing' || state === 'raid')) drawBanner();
   if (state === 'levelclear') drawLevelClear();
   if (state === 'gameover') drawGameOver();
-  if (paused) drawPanelItems([['PAUSA', titleS(), PAL.w], [touchMode ? 'TOCA LA PANTALLA' : 'P PARA CONTINUAR', 1, '#9ccaff']]);
+  if (paused) drawPanelItems([[tr('pause'), titleS(), PAL.w], [touchMode ? tr('tapScreen') : tr('pCont'), 1, '#9ccaff']]);
   if (invite) drawInvite();
   if (helpOpen) drawInstallHelp();
   ctx.restore();
@@ -2280,6 +2551,13 @@ addEventListener('keydown', e => {
   if (k) { kb[k] = true; e.preventDefault(); }
   if (e.repeat) return;
   if (helpOpen) { helpOpen = false; return; }
+  if (langOpen) {
+    if (e.code === 'ArrowUp' || e.code === 'ArrowDown') langSel = (langSel + (e.code === 'ArrowUp' ? -1 : 1) + LANGS.length) % LANGS.length;
+    else if (e.code === 'Enter' || e.code === 'Space') pickLang(LANGS[langSel]);
+    else if (e.code === 'Escape' || e.code === 'KeyL') langOpen = false;
+    return;
+  }
+  if (e.code === 'KeyL' && state === 'title' && !invite) { openLang(); return; }
   if (invite) {
     if (e.code === 'Enter') doInstall();
     else if (e.code === 'Escape') laterInstall();
@@ -2301,6 +2579,10 @@ const inside = (b, x, y, m = 0) => x >= b.x - m && x < b.x + b.w + m && y >= b.y
 function zoneAt(vx, vy) {
   const px = vx - OX;
   if (helpOpen) return 'closehelp';
+  if (langOpen) {
+    const r = langLayout().rows.find(r => inside(r, px, vy, 0.5));
+    return r ? 'pick:' + r.code : 'langclose';
+  }
   if (invite) {
     const L = inviteLayout();
     if (inside(L.bI, px, vy, 2)) return 'install';
@@ -2316,7 +2598,6 @@ function zoneAt(vx, vy) {
     return null;
   }
   for (const b of topBtns()) {
-    if (state === 'title' && b.id === 'pause') continue;
     if (inside(b, vx - OX, vy, touchMode ? 4 : 3)) return b.id;
   }
   return 'screen';
@@ -2340,6 +2621,9 @@ cvs.addEventListener('pointerdown', e => {
   ptrs.set(e.pointerId, z);
   if (z === 'pause') togglePause();
   else if (z === 'mute') toggleMute();
+  else if (z === 'lang') openLang();
+  else if (z === 'langclose') langOpen = false;
+  else if (z && z.startsWith('pick:')) pickLang(z.slice(5));
   else if (z === 'later') laterInstall();
   else if (z === 'closehelp') helpOpen = false;
   else if (z === 'fire' || z === 'screen') { if (paused) paused = false; else requestStart(); }
@@ -2445,6 +2729,8 @@ window.__vaquitas = {
   get music() { return Music.track; },
   get install() { return { installed, prompt: !!deferredPrompt, invite, helpOpen, can: canInstall(), games: gamesPlayed() }; },
   openInvite: () => { invite = true; }, openHelp: () => { helpOpen = true; }, pause: () => togglePause(),
+  setLang: c => setLang(c), openLang: () => openLang(), get lang() { return lang; },
+  toTitle: () => { toTitle(); invite = false; }, forceOver: () => gameOver('lostAll'),
   zone: (vx, vy) => zoneAt(vx, vy), titleBtn: () => titleLayout().btn,
   audioTest: () => {            // programa cada nota de cada pista para detectar errores
     AudioSys.init();
