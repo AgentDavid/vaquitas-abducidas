@@ -980,7 +980,8 @@ let paused = false;
 let clock = 0, stateTimer = 0;
 let score = 0, level = 1, lives = 3;
 let hi = loadHi();
-let hiBefore = hi, newRecord = false, gameOverReason = '';
+let hiBefore = hi, newRecord = false, gameOverReason = null;
+const LOST_ALL = { text: '¡SE LLEVARON A TODAS LAS VACAS!', short: '¡SIN VAQUITAS!' };
 let shake = 0, banner = null, waveBonus = 0;
 let fireT = 0, abductT = 0, motherT = 0, diveT = 0;
 let truckLost = false;
@@ -1146,7 +1147,9 @@ function startWave() {
   abductT = (level === 1 ? rand(6, 9) : rand(3, 5)) / DF.abduct;
   diveT = rand(2.5, 4) / DF.dive;
   motherT = rand(14, 22);
-  const subs = { 1: '¡PROTEGE LA LECHE!', 2: '¡ATAQUES EN PICADA!', 3: '¡LA FLOTA SE AGITA!' };
+  const subs = COMPACT
+    ? { 1: '¡CUIDA LA LECHE!', 2: '¡EN PICADA!', 3: '¡SE AGITAN!' }
+    : { 1: '¡PROTEGE LA LECHE!', 2: '¡ATAQUES EN PICADA!', 3: '¡LA FLOTA SE AGITA!' };
   banner = { text: 'OLEADA ' + level, sub: subs[level] || '¡MAS RAPIDO!', t: level === 1 ? 2.6 : 2.2 };
 }
 
@@ -1184,7 +1187,8 @@ function startRaid() {
   shots = []; eshots = []; powerups = [];
   player.triple = 0;
   for (const i of inv) if (i.dive) i.dive.phase = 'return';
-  banner = { text: '¡SIN DEFENSA!', sub: '¡SE LLEVAN A LAS VAQUITAS!', t: 99, y: CY - 60 };
+  banner = COMPACT ? { text: '¡SIN DEFENSA!', sub: '¡SE LAS LLEVAN!', t: 99 }
+    : { text: '¡SIN DEFENSA!', sub: '¡SE LLEVAN A LAS VAQUITAS!', t: 99, y: CY - 60 };
   SFX.alarm();
   const targets = cows.filter(c => (c.state === 'free' || c.state === 'falling') && !c.target);
   targets.forEach((cow, k) => {
@@ -1202,7 +1206,7 @@ function startRaid() {
     cow.target = a;
     abductors.push(a);
   });
-  if (cowsLeft() === 0 || abductors.length === 0) gameOver('¡SE LLEVARON A TODAS LAS VACAS!');
+  if (cowsLeft() === 0 || abductors.length === 0) gameOver(LOST_ALL);
 }
 
 function requestStart() {
@@ -1650,12 +1654,12 @@ function updateAbductions(dt, raid = false) {
         c.state = 'gone'; c.target = null; c.scale = 1; c.rot = 0;
         if (!raid) floater('¡VACA ABDUCIDA!', clamp(a.x + 6, 50, W - 50), 30, PAL.r, 1.8);
         shake = 2;
-        if (cowsLeft() === 0) { gameOver('¡SE LLEVARON A TODAS LAS VACAS!'); return; }
+        if (cowsLeft() === 0) { gameOver(LOST_ALL); return; }
       }
     }
   }
   abductors = abductors.filter(a => !a.dead);
-  if (raid && !abductors.length && state === 'raid') gameOver('¡SE LLEVARON A TODAS LAS VACAS!');
+  if (raid && !abductors.length && state === 'raid') gameOver(LOST_ALL);
 }
 
 function updateCows(dt) {
@@ -2068,22 +2072,22 @@ function drawTitle() {
 // Invitación a instalar (celular, después de jugar una partida)
 function inviteLayout() {
   const maxW = W - panelM() * 2 - 10;
-  const head = wrapText('¿TE GUSTO?', 2, maxW);
+  const hs = titleS(), head = wrapText('¿TE GUSTO?', hs, maxW);
   const body = wrapText('INSTALALO PARA JUGAR A PANTALLA COMPLETA Y SIN INTERNET', 1, maxW);
   const bI = uiBtn('INSTALAR', true), bL = uiBtn('AHORA NO');
   const stack = bI.w + bL.w + 6 > maxW;
-  const textH = head.length * lineH(2) + 4 + body.length * lineH(1);
+  const textH = head.length * lineH(hs) + 4 + body.length * lineH(1);
   const total = textH + 8 + (stack ? 30 : 13);
   const y0 = Math.round(CY - total / 2), by = y0 + textH + 8;
   if (stack) { bI.x = Math.round(W / 2 - bI.w / 2); bI.y = by; bL.x = Math.round(W / 2 - bL.w / 2); bL.y = by + 17; }
   else { const tw = bI.w + bL.w + 6; bI.x = Math.round(W / 2 - tw / 2); bL.x = bI.x + bI.w + 6; bI.y = bL.y = by; }
-  return { y0, total, head, body, bI, bL };
+  return { y0, total, hs, head, body, bI, bL };
 }
 function drawInvite() {
   const L = inviteLayout();
   drawPanel(L.y0 - 9, L.y0 + L.total + 9);
   let y = L.y0;
-  for (const l of L.head) { drawTextShadow(l, W / 2, y, PAL.y, 2, 'center'); y += lineH(2); }
+  for (const l of L.head) { drawTextShadow(l, W / 2, y, PAL.y, L.hs, 'center'); y += lineH(L.hs); }
   y += 4;
   for (const l of L.body) { drawTextShadow(l, W / 2, y, PAL.w, 1, 'center'); y += lineH(1); }
   drawUIButton(L.bI, true);
@@ -2093,10 +2097,11 @@ function drawInstallHelp() {
   const steps = IS_IOS
     ? ['1. TOCA COMPARTIR (EL CUADRO CON LA FLECHA HACIA ARRIBA)', "2. ELIGE 'AGREGAR A INICIO'"]
     : ['1. ABRE EL MENU DEL NAVEGADOR (LOS 3 PUNTOS)', "2. ELIGE 'INSTALAR APP' O 'AGREGAR A PANTALLA DE INICIO'"];
-  drawPanelItems([['PARA INSTALAR', 2, PAL.y], ...steps.map(t => [t, 1, PAL.w]), ['TOCA PARA CERRAR', 1, '#7f95c9']]);
+  drawPanelItems([['PARA INSTALAR', titleS(), PAL.y], ...steps.map(t => [t, 1, PAL.w]), ['TOCA PARA CERRAR', 1, '#7f95c9']]);
 }
 
 const panelM = () => COMPACT ? 4 : 14;
+const titleS = () => COMPACT ? 1 : 2;   // títulos de avisos y paneles: en celular, del tamaño normal
 function drawPanel(y0, y1) {
   const m = panelM();
   ctx.fillStyle = 'rgba(4,8,24,0.85)';
@@ -2121,16 +2126,53 @@ function drawPanelItems(items) {
 }
 
 function drawGameOver() {
+  const blinkRec = Math.floor(clock * 4) % 2 === 1, blinkGo = stateTimer > 1 && Math.floor(clock * 2.2) % 2 === 0;
+  if (COMPACT) {
+    // tarjeta de resultados: oscurece todo y deja solo lo esencial, con los puntos en grande
+    ctx.fillStyle = 'rgba(4,8,24,0.6)';
+    ctx.fillRect(-OX, 0, VW, H);
+    const items = [['FIN DEL JUEGO', titleS(), PAL.r]];
+    if (gameOverReason) items.push([gameOverReason.short, 1, PAL.y]);
+    items.push(['PUNTOS', 1, '#7fb2ff'], [pad(score), 1.5, PAL.w], ['OLEADA ' + level, 1, '#9fe39f']);
+    if (newRecord) items.push(['¡NUEVO RECORD!', 1, PAL.c, blinkRec]);
+    items.push(['TOCA PARA SEGUIR', 1, PAL.y, blinkGo]);
+    drawPanelItems(items);
+    return;
+  }
   const items = [['FIN DEL JUEGO', 2, PAL.r]];
-  if (gameOverReason) items.push([gameOverReason, 1, PAL.y]);
+  if (gameOverReason) items.push([gameOverReason.text, 1, PAL.y]);
   items.push(['PUNTOS ' + pad(score), 1, PAL.w], ['VAQUITAS A SALVO: ' + cowsLeft(), 1, '#9fe39f']);
-  if (newRecord) items.push(['¡NUEVO RECORD! OLEADA ' + level, 1, PAL.c, Math.floor(clock * 4) % 2 === 1]);
-  items.push([touchMode ? 'TOCA PARA CONTINUAR' : 'ENTER PARA CONTINUAR', 1, PAL.y, stateTimer > 1 && Math.floor(clock * 2.2) % 2 === 0]);
+  if (newRecord) items.push(['¡NUEVO RECORD! OLEADA ' + level, 1, PAL.c, blinkRec]);
+  items.push([touchMode ? 'TOCA PARA CONTINUAR' : 'ENTER PARA CONTINUAR', 1, PAL.y, blinkGo]);
   drawPanelItems(items);
 }
 
 function drawLevelClear() {
-  drawPanelItems([['¡OLEADA SUPERADA!', 2, PAL.y], ['BONO LECHERO +' + waveBonus, 1, PAL.c]]);
+  drawPanelItems(COMPACT ? [['¡SUPERADA!', titleS(), PAL.y], ['BONO +' + waveBonus, 1, PAL.c]]
+    : [['¡OLEADA SUPERADA!', 2, PAL.y], ['BONO LECHERO +' + waveBonus, 1, PAL.c]]);
+}
+
+// Avisos de la partida (oleada nueva, sin defensa)
+function drawBanner() {
+  const raid = state === 'raid', blink = !raid || Math.floor(clock * 3) % 3;
+  if (COMPACT) {
+    // franja de un renglón: arriba de las pacas, o bajo el marcador durante el ataque final
+    const ts = titleS(), h = lineH(ts) + lineH(1) + 6;
+    const y0 = raid ? 13 : SHIELD_Y - h - 3;
+    ctx.fillStyle = 'rgba(4,8,24,0.75)';
+    ctx.fillRect(-OX, y0, VW, h);
+    ctx.fillStyle = raid ? PAL.r : PAL.b;
+    ctx.fillRect(-OX, y0, VW, 0.5); ctx.fillRect(-OX, y0 + h - 0.5, VW, 0.5);
+    if (blink) drawTextShadow(banner.text, W / 2, y0 + 3, raid ? PAL.r : PAL.w, ts, 'center');
+    drawTextShadow(banner.sub, W / 2, y0 + 3 + lineH(ts), PAL.y, 1, 'center');
+    return;
+  }
+  const by = banner.y || CY + 4;
+  const big = wrapText(banner.text, 2, W - 8), small = wrapText(banner.sub, 1, W - 8);
+  const h2 = big.length * lineH(2) + 2;
+  if (raid) { ctx.fillStyle = 'rgba(4,8,24,0.7)'; ctx.fillRect(-OX, by - 5, VW, h2 + small.length * lineH(1) + 8); }
+  if (blink) big.forEach((l, k) => drawTextShadow(l, W / 2, by + k * lineH(2), raid ? PAL.r : PAL.w, 2, 'center'));
+  small.forEach((l, k) => drawTextShadow(l, W / 2, by + h2 + k * lineH(1), PAL.y, 1, 'center'));
 }
 
 // ---------- Panel de controles táctiles (dibujado en el canvas) ----------
@@ -2212,18 +2254,10 @@ function render() {
   drawFloaters();
   drawHUD();
   if (state === 'title') drawTitle();
-  if (banner && (state === 'playing' || state === 'raid')) {
-    const by = banner.y || CY + 4;
-    const big = wrapText(banner.text, 2, W - 8), small = wrapText(banner.sub, 1, W - 8);
-    const h2 = big.length * lineH(2) + 2;
-    if (state === 'raid') { ctx.fillStyle = 'rgba(4,8,24,0.7)'; ctx.fillRect(-OX, by - 5, VW, h2 + small.length * lineH(1) + 8); }
-    const blink = state !== 'raid' || Math.floor(clock * 3) % 3;
-    if (blink) big.forEach((l, k) => drawTextShadow(l, W / 2, by + k * lineH(2), state === 'raid' ? PAL.r : PAL.w, 2, 'center'));
-    small.forEach((l, k) => drawTextShadow(l, W / 2, by + h2 + k * lineH(1), PAL.y, 1, 'center'));
-  }
+  if (banner && !paused && (state === 'playing' || state === 'raid')) drawBanner();
   if (state === 'levelclear') drawLevelClear();
   if (state === 'gameover') drawGameOver();
-  if (paused) drawPanelItems([['PAUSA', 2, PAL.w], [touchMode ? 'TOCA LA PANTALLA' : 'P PARA CONTINUAR', 1, '#9ccaff']]);
+  if (paused) drawPanelItems([['PAUSA', titleS(), PAL.w], [touchMode ? 'TOCA LA PANTALLA' : 'P PARA CONTINUAR', 1, '#9ccaff']]);
   if (invite) drawInvite();
   if (helpOpen) drawInstallHelp();
   ctx.restore();
@@ -2407,7 +2441,7 @@ window.__vaquitas = {
   sprites: SPR,
   get music() { return Music.track; },
   get install() { return { installed, prompt: !!deferredPrompt, invite, helpOpen, can: canInstall(), games: gamesPlayed() }; },
-  openInvite: () => { invite = true; }, openHelp: () => { helpOpen = true; },
+  openInvite: () => { invite = true; }, openHelp: () => { helpOpen = true; }, pause: () => togglePause(),
   zone: (vx, vy) => zoneAt(vx, vy), titleBtn: () => titleLayout().btn,
   audioTest: () => {            // programa cada nota de cada pista para detectar errores
     AudioSys.init();
