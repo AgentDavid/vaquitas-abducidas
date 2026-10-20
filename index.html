@@ -68,6 +68,8 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch { return d; } },
   set(k, v) { try { localStorage.setItem(k, v); } catch {} }
 };
+// Modo navideño (por defecto). Se cambia con el botón del árbol en el inicio o con la tecla N.
+let XMAS = store.get('vaquitasXmas', '1') === '1';
 function mulberry32(a) {
   return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 }
@@ -122,7 +124,8 @@ const PAL = {
   y: '#ffe14d', o: '#ffa63d',
   r: '#ff5a4e', R: '#b8282a', d: '#ffa198', D: '#6b1218',
   m: '#ff6fa8', M: '#b83b70', n: '#ff9fbf',
-  b: '#1f5fd1', B: '#0c2f8a', i: '#6fa2ff', t: '#efe2b8'
+  b: '#1f5fd1', B: '#0c2f8a', i: '#6fa2ff', t: '#efe2b8',
+  u: '#8a5a2b', U: '#5e3b1a', z: '#d9b98a', s: '#eef4ff', S: '#b9c9ea'
 };
 
 function makeSprite(rows, pal = PAL) {
@@ -203,6 +206,31 @@ const COW_BODY = [
   '..vvwwwwwwvvvwwvvv......',
   '..kk..kknnnn..kk..kk....'];
 
+// Camión lechero (filas aparte para armar la versión navideña)
+const TRUCK_ROWS = [
+  '............BB..........................',
+  '...........BiiB.........................',
+  '...........BbbB.........................',
+  '...........BbbB.........................',
+  '.....wwwwwwBbbBwwwwwww..................',
+  '...wwwwwwwwwwwwwwwwwwwwwwv..............',
+  '..wwwwwwwwwbbwwwwwwwwwwwwvv...bbbbbbb...',
+  '.wwwwwwwwwbbbbwwwwwwwwwwwvv...bbcccccb..',
+  'wwwwwwwwwbbibbbwwwwwwwwwwvv...bbceeccbb.',
+  'wwwwwwwwwbibbbbwwwwwwwwwwvv...bbcecccbbb',
+  'wwwwwwwwwbbbbbbwwwwwwwwwwvv...bbbbbbbbbb',
+  '.wwwwwwwwwbbbbwwwwwwwwwwwvv...bbbbbbbbyy',
+  '..vwwwwwwwwbbwwwwwwwwwwvvvBBBBbbbbbbbbbb',
+  '....vvvvvvvvvvvvvvvvvvvvBBBBBBbbbbbbbbbb',
+  'iiiiiiiiiiiiiiiiiiiiiiiiiiiiBBiiiiiiiiyy',
+  'bbbbbbbbbbbbbbbbbbbbbbbbbbbbBBbbbbbbbbbb',
+  'rrBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+  '..BBkkkkkkBBBBkkkkkkBBBBBBBBBBkkkkkkBB..',
+  '....kaaaak....kaaaak..........kaaaak....',
+  '....kaAAak....kaAAak..........kaAAak....',
+  '....kaaaak....kaaaak..........kaaaak....',
+  '.....kkkk......kkkk............kkkk.....'];
+
 const SPR = {
   // Naves enemigas: platillo morado (30), platillo verde con piloto (20), platillo rojo (10)
   ufo: [
@@ -224,29 +252,7 @@ const SPR = {
       '........yy..oo....oo..yy........', '.........o..o......o..o.........', '................................'])
   ],
   // Camión lechero: tanque blanco con gota de leche, cañón de leche y cabina azul
-  truck: makeSprite([
-    '............BB..........................',
-    '...........BiiB.........................',
-    '...........BbbB.........................',
-    '...........BbbB.........................',
-    '.....wwwwwwBbbBwwwwwww..................',
-    '...wwwwwwwwwwwwwwwwwwwwwwv..............',
-    '..wwwwwwwwwbbwwwwwwwwwwwwvv...bbbbbbb...',
-    '.wwwwwwwwwbbbbwwwwwwwwwwwvv...bbcccccb..',
-    'wwwwwwwwwbbibbbwwwwwwwwwwvv...bbceeccbb.',
-    'wwwwwwwwwbibbbbwwwwwwwwwwvv...bbcecccbbb',
-    'wwwwwwwwwbbbbbbwwwwwwwwwwvv...bbbbbbbbbb',
-    '.wwwwwwwwwbbbbwwwwwwwwwwwvv...bbbbbbbbyy',
-    '..vwwwwwwwwbbwwwwwwwwwwvvvBBBBbbbbbbbbbb',
-    '....vvvvvvvvvvvvvvvvvvvvBBBBBBbbbbbbbbbb',
-    'iiiiiiiiiiiiiiiiiiiiiiiiiiiiBBiiiiiiiiyy',
-    'bbbbbbbbbbbbbbbbbbbbbbbbbbbbBBbbbbbbbbbb',
-    'rrBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
-    '..BBkkkkkkBBBBkkkkkkBBBBBBBBBBkkkkkkBB..',
-    '....kaaaak....kaaaak..........kaaaak....',
-    '....kaAAak....kaAAak..........kaAAak....',
-    '....kaaaak....kaaaak..........kaaaak....',
-    '.....kkkk......kkkk............kkkk.....']),
+  truck: makeSprite(TRUCK_ROWS),
   cow: [
     makeSprite([...COW_BODY,
       '..kk..kk.nn...kk..kk....',
@@ -335,6 +341,158 @@ const SPR = {
     '......w.......'])
 };
 const UFO_COLORS = [[PAL.p, PAL.c, PAL.y, PAL.w], [PAL.g, PAL.G, PAL.l, PAL.w], [PAL.r, PAL.R, PAL.o, PAL.w]];
+
+// ---------- Sprites navideños ----------
+const recolor = (rows, map) => rows.map(r => [...r].map(ch => map[ch] || ch).join(''));
+// Gorrito de Santa (la punta cae hacia atrás con el pompón)
+SPR.hat = makeSprite([
+  '.ww........',
+  'wwwr.......',
+  '.wrrrr.....',
+  '..rrrrrrR..',
+  '..rrrrrrrR.',
+  '.wwwwwwwwww',
+  '.wvwwvwwvw.']);
+// Vaca con gorrito: el sprite crece 6 filas hacia arriba (se dibuja 3 unidades más alto)
+SPR.cowHat = SPR.cow.map(img => {
+  const c = newCanvas(24, 22), g = c.getContext('2d');
+  g.drawImage(img, 0, 6);
+  g.drawImage(SPR.hat, 13, 1);
+  return c;
+});
+// Camión de Navidad: cuernos de reno, nariz roja y una tira de luces
+const TRUCK_X_ROWS = TRUCK_ROWS.map(r => [...r]);
+for (const [row, cols] of [[3, [31, 33, 36, 38]], [4, [32, 33, 36, 37]], [5, [33, 36]]]) for (const c of cols) TRUCK_X_ROWS[row][c] = 'u';
+TRUCK_X_ROWS[11][38] = TRUCK_X_ROWS[11][39] = 'r';
+{ let k = 0; TRUCK_X_ROWS[14] = TRUCK_X_ROWS[14].map(ch => ch === 'i' ? (k++ % 2 ? 'b' : 'rygc'[(k >> 1) % 4]) : ch); }
+const TRUCK_N = SPR.truck, TRUCK_X = makeSprite(TRUCK_X_ROWS.map(r => r.join('')));
+// Trineo de Santa con su costal y los renos (Rudolph va adelante con la nariz roja)
+SPR.sleigh = makeSprite([
+  '.......rr.......',
+  '......rrrrw.....',
+  '.....wwwwww.....',
+  '.....ddkddd.....',
+  '..uu.wwwwwwd....',
+  '.uuuu.wwwwrr....',
+  'uuzuuurrrrrrr...',
+  'uuuuUyrrrrrryR..',
+  'RrrrrrrrrrrrrrrR',
+  '.RrrrrrrrrrrrrR.',
+  '..RyyyyyyyyyyR..',
+  '..y.......y...y.',
+  '..yyyyyyyyyyyyy.']);
+const DEER = (nose, legs) => makeSprite([
+  '........z.z.',
+  '........zz..',
+  '.......uuuu.',
+  '.......uuuk' + nose,
+  '.uuuuuuuu...',
+  'uuuuuuuuu...',
+  '.UuuzzuuU...', ...legs]);
+const LEGS = [['.U.U...U.U..', 'U...U.U...U.'], ['..UU...UU...', '..U.U..U.U..']];
+SPR.deer = LEGS.map(l => DEER('k', l));
+SPR.rudolph = LEGS.map(l => DEER('r', l));
+// Regalos: rojo con moño dorado, verde con moño rojo, azul con moño plateado
+const GIFT_ROWS = [
+  '..yy....yy..',
+  '...yy..yy...',
+  '....yyyy....',
+  'rrrrryyrrrrr',
+  'rrrrryyrrrrR',
+  'RRRRRyyRRRRR',
+  '.rrrryyrrrR.',
+  '.yyyyyyyyyy.',
+  '.rrrryyrrrR.',
+  '.rrrryyrrrR.',
+  '.rrrryyrrrR.',
+  '.RRRRyyRRRR.'];
+SPR.gift = [{}, { r: 'g', R: 'G', y: 'r' }, { r: 'i', R: 'b', y: 'w' }].map(m => makeSprite(recolor(GIFT_ROWS, m)));
+SPR.star = makeSprite([
+  '.....y.....',
+  '....yyy....',
+  '....ywy....',
+  'yyyyywyyyyy',
+  '.yyywwwyyy.',
+  '..yywwwyy..',
+  '...yyyyy...',
+  '..yyy.yyy..',
+  '.yyy...yyy.',
+  '.yy.....yy.',
+  'y.........y']);
+// Media colgada en la cerca, con un regalito asomando
+const STOCKING_ROWS = [
+  '...yy...',
+  '..gyyg..',
+  '..gggg..',
+  '.wwwwww.',
+  '.wvwwvw.',
+  '..rrrr..',
+  '..rRrr..',
+  '..rrrr..',
+  '..rrRr..',
+  '..rrrrr.',
+  '..rrrrrr',
+  '...rRrrr',
+  '....rrr.'];
+SPR.stocking = [makeSprite(STOCKING_ROWS), makeSprite(recolor(STOCKING_ROWS, { r: 'g', R: 'G', g: 'r' }))];
+// Íconos del botón de modo: arbolito (navideño) y cabeza de vaca (clásico)
+SPR.tree = makeSprite([
+  '.....y.....',
+  '....yyy....',
+  '.....g.....',
+  '....ggg....',
+  '...gggrg...',
+  '....ggg....',
+  '...gygggg..',
+  '..ggggggg..',
+  '...ggggg...',
+  '..ggcgggrg.',
+  '.ggggggggg.',
+  'gggggrggggg',
+  '....uuu....',
+  '....uuu....']);
+SPR.cowIcon = makeSprite([
+  '.t........t.',
+  'kkkwwwwwwkkk',
+  '.kwwkwwkwwk.',
+  '..wwkwwkww..',
+  '..wwwwwwww..',
+  '..nnnnnnnn..',
+  '..nknnnnkn..',
+  '...nnnnnn...']);
+// Ovni gruñón: platillo verde oscuro con un piloto de cejas fruncidas y garras para robar regalos
+const GRUMPY_TOP = [
+  '.........cceecc.........',
+  '.......ccgggggcc........',
+  '......cgkkgggkkgc.......',
+  '......cggkgggkggc.......',
+  '......cgggkkkgggc.......',
+  '...llllllllllllllllll...',
+  '.lhhGGGGGGGGGGGGGGGGhhl.'];
+const GRUMPY_BOT = [
+  '.hhhhhhhhhhhhhhhhhhhhhh.',
+  '...hhhhhhhhhhhhhhhhhh...',
+  '.......aaa....aaa.......',
+  '......a..a....a..a......'];
+SPR.grumpy = [0, 2].map(o => makeSprite([...GRUMPY_TOP,
+  'l' + Array.from({ length: 22 }, (_, i) => (i + o) % 4 ? 'G' : 'y').join('') + 'l', ...GRUMPY_BOT]));
+// Ovnis congelados: mismo dibujo en tonos de hielo
+function iceCopy(img) {
+  const c = newCanvas(img.width, img.height), g = c.getContext('2d');
+  g.drawImage(img, 0, 0);
+  const id = g.getImageData(0, 0, c.width, c.height), d = id.data;
+  for (let i = 0; i < d.length; i += 4) {
+    if (!d[i + 3]) continue;
+    const L = (0.3 * d[i] + 0.59 * d[i + 1] + 0.11 * d[i + 2]) / 255;
+    const col = L > 0.8 ? [255, 255, 255] : L > 0.55 ? [205, 238, 255] : L > 0.3 ? [127, 198, 255] : [47, 111, 176];
+    d[i] = col[0]; d[i + 1] = col[1]; d[i + 2] = col[2];
+  }
+  g.putImageData(id, 0, 0);
+  return c;
+}
+SPR.ufoIce = SPR.ufo.map(frames => frames.map(iceCopy));
+function applyTheme() { SPR.truck = XMAS ? TRUCK_X : TRUCK_N; }
+applyTheme();
 
 // Dibuja un sprite en coordenadas lógicas (cada píxel de sprite = 1/RS unidades)
 function drawSprite(img, x, y, flip = false) {
@@ -520,6 +678,46 @@ const TX = {
     fire: 'فائر', pause: 'وقفہ', tapScreen: 'اسکرین کو چھوئیں', pCont: 'جاری رکھنے کے لیے P', language: 'زبان'
   }
 };
+// Textos del modo navideño
+const TX_XMAS = {
+  es: { merry: '¡FELIZ NAVIDAD!', modeXmas: 'MODO NAVIDEÑO', modeClassic: 'MODO CLASICO', hoho: 'JO JO JO',
+        frozen: '¡FLOTA CONGELADA!', frozenC: '¡CONGELADOS!', iceShield: '¡ESCUDO DE HIELO!', star: '¡ESTRELLA PROTECTORA!', starC: '¡ESTRELLA!',
+        newHay: '¡PACAS NUEVAS!', extraLife: '+1 VIDA', thief: '¡LADRON!', stolen: '¡SE ROBARON EL REGALO!', stolenC: '¡ROBADO!',
+        recovered: '¡REGALO RECUPERADO!', recoveredC: '¡RECUPERADO!', stocking: '¡MEDIA LLENA! +{0}', stockingC: 'MEDIA +{0}' },
+  en: { merry: 'MERRY CHRISTMAS!', modeXmas: 'CHRISTMAS MODE', modeClassic: 'CLASSIC MODE', hoho: 'HO HO HO',
+        frozen: 'FLEET FROZEN!', frozenC: 'FROZEN!', iceShield: 'ICE SHIELD!', star: 'GUARDIAN STAR!', starC: 'STAR!',
+        newHay: 'FRESH HAY!', extraLife: '+1 LIFE', thief: 'THIEF!', stolen: 'GIFT STOLEN!', recovered: 'GIFT RECOVERED!', recoveredC: 'RECOVERED!',
+        stocking: 'STOCKING FILLED! +{0}', stockingC: 'STOCKING +{0}' },
+  zh: { merry: '圣诞快乐！', modeXmas: '圣诞模式', modeClassic: '经典模式', hoho: '嗬嗬嗬', frozen: '舰队冻结！', iceShield: '冰盾！',
+        star: '守护之星！', newHay: '新干草堆！', extraLife: '+1 生命', thief: '小偷！', stolen: '礼物被偷了！', recovered: '礼物夺回来了！',
+        stocking: '袜子装满了！+{0}' },
+  hi: { merry: 'मेरी क्रिसमस!', modeXmas: 'क्रिसमस मोड', modeClassic: 'क्लासिक मोड', hoho: 'हो हो हो', frozen: 'बेड़ा जम गया!',
+        iceShield: 'बर्फ़ की ढाल!', star: 'रक्षक तारा!', newHay: 'नई घास की गांठें!', extraLife: '+1 जीवन', thief: 'चोर!',
+        stolen: 'तोहफ़ा चोरी हो गया!', recovered: 'तोहफ़ा वापस मिला!', stocking: 'मोज़ा भर गया! +{0}' },
+  ar: { merry: 'عيد ميلاد مجيد!', modeXmas: 'وضع عيد الميلاد', modeClassic: 'الوضع الكلاسيكي', hoho: 'هو هو هو', frozen: 'تجمّد الأسطول!',
+        iceShield: 'درع الجليد!', star: 'نجمة الحماية!', newHay: 'قش جديد!', extraLife: '+1 حياة', thief: 'لص!',
+        stolen: 'سُرقت الهدية!', recovered: 'استعدت الهدية!', stocking: 'امتلأ الجورب! +{0}' },
+  fr: { merry: 'JOYEUX NOËL !', modeXmas: 'MODE NOËL', modeClassic: 'MODE CLASSIQUE', hoho: 'HO HO HO',
+        frozen: 'FLOTTE GELÉE !', frozenC: 'GELÉS !', iceShield: 'BOUCLIER DE GLACE !', iceShieldC: 'BOUCLIER !',
+        star: 'ÉTOILE PROTECTRICE !', starC: 'ÉTOILE !', newHay: 'FOIN NEUF !', extraLife: '+1 VIE', thief: 'VOLEUR !',
+        stolen: 'CADEAU VOLÉ !', recovered: 'CADEAU RÉCUPÉRÉ !', recoveredC: 'RÉCUPÉRÉ !',
+        stocking: 'CHAUSSETTE PLEINE ! +{0}', stockingC: 'CHAUSSETTE +{0}' },
+  bn: { merry: 'শুভ বড়দিন!', modeXmas: 'বড়দিন মোড', modeClassic: 'ক্লাসিক মোড', hoho: 'হো হো হো', frozen: 'বহর জমে গেছে!',
+        iceShield: 'বরফের ঢাল!', star: 'রক্ষাকারী তারা!', newHay: 'নতুন খড়ের গাঁট!', extraLife: '+1 জীবন', thief: 'চোর!',
+        stolen: 'উপহার চুরি হয়ে গেল!', recovered: 'উপহার উদ্ধার!', stocking: 'মোজা ভরে গেল! +{0}' },
+  pt: { merry: 'FELIZ NATAL!', modeXmas: 'MODO NATALINO', modeClassic: 'MODO CLÁSSICO', hoho: 'HO HO HO',
+        frozen: 'FROTA CONGELADA!', frozenC: 'CONGELADOS!', iceShield: 'ESCUDO DE GELO!', star: 'ESTRELA PROTETORA!', starC: 'ESTRELA!',
+        newHay: 'FENO NOVO!', extraLife: '+1 VIDA', thief: 'LADRÃO!', stolen: 'PRESENTE ROUBADO!', stolenC: 'ROUBADO!',
+        recovered: 'PRESENTE RECUPERADO!', recoveredC: 'RECUPERADO!', stocking: 'MEIA CHEIA! +{0}', stockingC: 'MEIA +{0}' },
+  ru: { merry: 'С РОЖДЕСТВОМ!', modeXmas: 'РОЖДЕСТВЕНСКИЙ РЕЖИМ', modeXmasC: 'РОЖДЕСТВО', modeClassic: 'КЛАССИКА', hoho: 'ХО-ХО-ХО',
+        frozen: 'ФЛОТ ЗАМОРОЖЕН!', frozenC: 'ЗАМОРОЖЕНЫ!', iceShield: 'ЛЕДЯНОЙ ЩИТ!', star: 'ЗВЕЗДА-ХРАНИТЕЛЬ!', starC: 'ЗВЕЗДА!',
+        newHay: 'НОВОЕ СЕНО!', extraLife: '+1 ЖИЗНЬ', thief: 'ВОР!', stolen: 'ПОДАРОК УКРАДЕН!', stolenC: 'УКРАДЕН!',
+        recovered: 'ПОДАРОК ВОЗВРАЩЁН!', recoveredC: 'ВОЗВРАЩЁН!', stocking: 'НОСОК ПОЛОН! +{0}', stockingC: 'НОСОК +{0}' },
+  ur: { merry: 'کرسمس مبارک!', modeXmas: 'کرسمس موڈ', modeClassic: 'کلاسک موڈ', hoho: 'ہو ہو ہو', frozen: 'بیڑا جم گیا!',
+        iceShield: 'برف کی ڈھال!', star: 'محافظ ستارہ!', newHay: 'نئی گھاس!', extraLife: '+1 زندگی', thief: 'چور!',
+        stolen: 'تحفہ چوری ہو گیا!', recovered: 'تحفہ واپس مل گیا!', stocking: 'موزہ بھر گیا! +{0}' }
+};
+for (const l in TX_XMAS) Object.assign(TX[l], TX_XMAS[l]);
 function detectLang() {
   const saved = store.get('vaquitasLang', '');
   if (LANGS.includes(saved)) return saved;
@@ -655,7 +853,7 @@ function drawTextShadow(s, x, y, color, scale = 1, align = 'left', shadow = '#05
 }
 
 // Logo en bloques biselados (brillo arriba/izquierda, sombra abajo), pre-renderizado a RS
-function makeTitleLogo(text, scale, fill, lower, outline, shadow, thick) {
+function makeTitleLogo(text, scale, fill, lower, outline, shadow, thick, snow = false) {
   text = norm(text);
   const B = scale * RS, T = thick * RS;
   const lw = textWidth(text, scale) + thick * 2 + 3, lh = 7 * scale + thick * 2 + 3;
@@ -684,7 +882,22 @@ function makeTitleLogo(text, scale, fill, lower, outline, shadow, thick) {
     if (!on.has(gx + ',' + (gy + 1))) { g.fillStyle = lo; g.fillRect(x, y + B - 1, B, 1); }
     if (!on.has((gx + 1) + ',' + gy)) { g.fillStyle = lo; g.fillRect(x + B - 1, y, 1, B); }
   }
-  c.lw = lw; c.lh = lh;
+  if (snow) {
+    // nieve acumulada sobre cada borde superior, con gotitas que cuelgan
+    const rnd = mulberry32(1225), cap = Math.max(RS, Math.round(B * 0.45));
+    for (const [gx, gy] of cells) {
+      if (on.has(gx + ',' + (gy - 1))) continue;
+      const x = X(gx), y = Y(gy);
+      const l = on.has((gx - 1) + ',' + gy) ? 0 : T, r = on.has((gx + 1) + ',' + gy) ? 0 : T;
+      g.fillStyle = '#ffffff'; g.fillRect(x - l, y - T, B + l + r, T + cap);
+      g.fillStyle = '#cfdcf5'; g.fillRect(x - l, y + cap - 1, B + l + r, 1);
+      if (rnd() < 0.45) {
+        const dw = Math.max(1, Math.round(B * 0.3)), dx = x + Math.floor(rnd() * (B - dw));
+        g.fillStyle = '#ffffff'; g.fillRect(dx, y + cap, dw, Math.max(1, Math.round(B * (0.15 + rnd() * 0.3))));
+      }
+    }
+  }
+  c.lw = lw; c.lh = lh; c.sc = scale; c.th = thick;
   return c;
 }
 const LOGO = makeTitleLogo('VAQUITAS', 4, '#ffffff', '#9ccaff', '#1f5fd1', '#06123a', 2);
@@ -692,12 +905,18 @@ const SUBLOGO = makeTitleLogo('ABDUCIDAS', 2, '#c6ff4a', '#5bea6b', '#14361f', '
 // versiones para el modo compacto (celular vertical)
 const LOGO_S = makeTitleLogo('VAQUITAS', 2, '#ffffff', '#9ccaff', '#1f5fd1', '#06123a', 1);
 const SUBLOGO_S = makeTitleLogo('ABDUCIDAS', 1, '#c6ff4a', '#5bea6b', '#14361f', '#050a1f', 1);
+// versiones nevadas del modo navideño
+const LOGO_X = makeTitleLogo('VAQUITAS', 4, '#ff6b5e', '#d8322f', '#5a0d14', '#14030a', 2, true);
+const SUBLOGO_X = makeTitleLogo('ABDUCIDAS', 2, '#c6ff4a', '#5bea6b', '#14361f', '#050a1f', 1, true);
+const LOGO_XS = makeTitleLogo('VAQUITAS', 2, '#ff6b5e', '#d8322f', '#5a0d14', '#14030a', 1, true);
+const SUBLOGO_XS = SUBLOGO_S;   // a este tamaño la nieve tapa las letras
 const blitLogo = (img, x, y) => ctx.drawImage(img, x, y, img.lw, img.lh);
 
 // ======================================================================
 //  Escenario (se regenera al cambiar el tamaño de pantalla)
 // ======================================================================
 let bgSky = null, bgFront = null, clouds = [], stars = [];
+let xlights = [], flakes = [], fenceGaps = [];   // modo navideño: foquitos, copos de nieve, huecos de la cerca
 
 function buildScene() {
   const rnd = mulberry32(20261009);
@@ -740,6 +959,9 @@ function buildScene() {
   const g = bgFront.getContext('2d');
   const rect = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
   const px = (x, y, col) => rect(x, y, 1, 1, col);
+  xlights = [];
+  const LIGHT_COLS = ['#ff5a4e', '#5bea6b', '#ffe14d', '#7fe3ff', '#ff6fa8'];
+  const light = (x, y) => xlights.push({ x: snap(x / RS), y: snap(y / RS), c: LIGHT_COLS[xlights.length % LIGHT_COLS.length], p: rnd() * 6.28 });
 
   // Luna con halo, sombreado y cráteres
   // en pantallas altas la luna sube para no encimarse con el logo
@@ -770,8 +992,8 @@ function buildScene() {
   for (let x = 0; x < PW; x++) {
     const lx = x / RS;
     const h = G - Math.round((17 + Math.sin(lx * 0.04) * 4 + Math.sin(lx * 0.13 + 1) * 2) * RS);
-    rect(x, h, 1, G - h, '#0b1c3a');
-    px(x, h, '#142a52');
+    rect(x, h, 1, G - h, XMAS ? '#16264a' : '#0b1c3a');
+    if (XMAS) rect(x, h, 1, 3, '#6f86b8'); else px(x, h, '#142a52');
   }
   const nearH = x => G - Math.round((7 + Math.sin(x / RS * 0.07 + 2) * 3 + Math.sin(x / RS * 0.19) * 1.5) * RS);
 
@@ -781,6 +1003,27 @@ function buildScene() {
     const tx = Math.round((k + rnd() * 0.8) * PW / nTrees);
     if (tx < 26 * RS || tx > (VW - 38) * RS) continue;
     const r = Math.round((2.5 + rnd() * 2.5) * RS), base = nearH(tx) + 2;
+    if (XMAS) {
+      // pino en tres pisos, con nieve en las puntas de las ramas
+      const th = Math.round(r * 3.4), top = base - th - 2, tierH = th / 3;
+      const halfW = y => Math.round((0.3 + 0.7 * (y % tierH) / tierH) * (Math.floor(y / tierH) + 1) / 3 * r * 1.3);
+      rect(tx - 1, base - 3, 2, 4, '#2a1a10');
+      let prev = -1;
+      for (let y = 0; y < th; y++) {
+        const hw = halfW(y);
+        for (let x = -hw; x <= hw; x++) {
+          const snowy = y === 0 || Math.abs(x) > prev || (Math.abs(x) === prev && rnd() < 0.3);
+          px(tx + x, top + y, snowy ? (x < 0 ? '#eef4ff' : '#b9c9ea') : x < -hw * 0.35 ? '#1d6b47' : x > hw * 0.45 ? '#0a2a1f' : '#0f3d2c');
+        }
+        prev = hw;
+      }
+      rect(tx - 1, top - 2, 2, 2, '#ffe14d');
+      for (let n = 0; n < 4; n++) {
+        const ly = Math.round(th * (0.3 + 0.65 * rnd()));
+        light(tx + Math.round((rnd() * 2 - 1) * halfW(ly) * 0.7), top + ly);
+      }
+      continue;
+    }
     rect(tx - 1, base - r - 3, 2, r + 3, '#0a2318');
     for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) {
       if (x * x + y * y > r * r) continue;
@@ -791,8 +1034,8 @@ function buildScene() {
   // Colinas cercanas
   for (let x = 0; x < PW; x++) {
     const h = nearH(x);
-    rect(x, h, 1, G - h, '#0d3326');
-    px(x, h, '#175040');
+    rect(x, h, 1, G - h, XMAS ? '#22365e' : '#0d3326');
+    if (XMAS) { rect(x, h, 1, 3, '#c6d4f0'); px(x, h + 3, '#9fb3d9'); } else px(x, h, '#175040');
   }
 
   // Molino de viento (las aspas se animan en drawWindmill)
@@ -808,6 +1051,7 @@ function buildScene() {
     rect(wx - 4, top - 1, 9, 2, '#5b6680');
     rect(wx + 2, top - 4, 9, 1, '#5b6680');
     rect(wx + 9, top - 8, 3, 8, '#6d7894');
+    if (XMAS) { rect(wx - 4, top - 2, 9, 1, '#eef4ff'); rect(wx + 2, top - 5, 9, 1, '#eef4ff'); rect(wx + 9, top - 9, 3, 1, '#eef4ff'); }
   }
 
   // Granero y silo (en la orilla derecha de la vista)
@@ -820,7 +1064,9 @@ function buildScene() {
       const w = Math.min(32, 12 + r * 4), x0 = bx + 16 - w / 2;
       rect(x0, G - 33 + r, w, 1, r === 0 ? '#6b2333' : '#4a1420');
       px(x0, G - 33 + r, '#6b2333');
+      if (XMAS && r < 4) { rect(x0, G - 33 + r, w, 1, r < 3 ? '#eef4ff' : '#b9c9ea'); if (r === 3) for (let x = x0 + 1; x < x0 + w - 1; x += 3) px(x, G - 32 + r, '#eef4ff'); }
     }
+    if (XMAS) for (let x = bx + 1; x < bx + 32; x += 4) light(x, G - 22);
     rect(bx, G - 23, 32, 1, '#b9ad99');
     rect(bx + 12, G - 20, 8, 7, '#b9ad99');
     rect(bx + 13, G - 19, 6, 5, '#ffd56a');
@@ -837,44 +1083,62 @@ function buildScene() {
     rect(sx, G - 44, 3, 44, '#7d8796');
     rect(sx + 11, G - 44, 3, 44, '#464d5b');
     for (let y = G - 40; y < G; y += 8) rect(sx, y, 14, 1, '#4a515e');
-    for (let r = 0; r < 6; r++) { const w = 4 + r * 2; rect(sx + 7 - w / 2, G - 50 + r, w, 1, r < 2 ? '#a5adbb' : '#8a93a2'); }
+    for (let r = 0; r < 6; r++) { const w = 4 + r * 2; rect(sx + 7 - w / 2, G - 50 + r, w, 1, XMAS ? (r < 5 ? '#eef4ff' : '#b9c9ea') : r < 2 ? '#a5adbb' : '#8a93a2'); }
   }
 
   // Pasto con textura y matas en la orilla
   const S0 = (H - 13) * RS;
-  rect(0, G, PW, S0 - G, '#2b8a3c');
+  const GC = XMAS ? ['#7f95c0', '#6f85b1', '#a9bde0', '#e6eeff', '#bfcff0', '#dfe9ff', '#c3d2ee']
+                  : ['#2b8a3c', '#237a34', '#3c9e4b', '#4cc35a', '#3aa64a', '#3fae4a', '#2f9440'];
+  rect(0, G, PW, S0 - G, GC[0]);
   for (let y = G + 2; y < S0; y++) {
     const d = (y - G) / (S0 - G);
     for (let x = 0; x < PW; x++) {
       const n = rnd();
-      if (n < 0.08 + d * 0.22) px(x, y, '#237a34');
-      else if (n > 0.97) px(x, y, '#3c9e4b');
+      if (n < 0.08 + d * 0.22) px(x, y, GC[1]);
+      else if (n > 0.97) px(x, y, GC[2]);
     }
   }
-  rect(0, G, PW, 1, '#4cc35a');
-  rect(0, G + 1, PW, 1, '#3aa64a');
+  rect(0, G, PW, 1, GC[3]);
+  rect(0, G + 1, PW, 1, GC[4]);
   for (let x = 0; x < PW; x++) if (rnd() < 0.5) {
-    const hh = 1 + Math.floor(rnd() * 3);
-    rect(x, G - hh, 1, hh, rnd() < 0.5 ? '#3fae4a' : '#2f9440');
+    const hh = XMAS ? 1 : 1 + Math.floor(rnd() * 3);
+    rect(x, G - hh, 1, hh, rnd() < 0.5 ? GC[5] : GC[6]);
   }
   // Cerca
   for (const ry of [G + 4 * RS, G + 8 * RS]) { rect(0, ry, PW, 1, '#c9bf9f'); rect(0, ry + 1, PW, 1, '#8f876f'); }
   for (let lx = 6; lx < VW; lx += 22) {
     const x = lx * RS, y = G + 2 * RS - 1, h = 10 * RS + 1;
-    rect(x, y, 4, h, '#d6cdb5'); rect(x, y, 1, h, '#efe7d0'); rect(x + 3, y, 1, h, '#a39b84'); rect(x, y, 4, 1, '#f5eedb');
+    rect(x, y, 4, h, '#d6cdb5'); rect(x, y, 1, h, '#efe7d0'); rect(x + 3, y, 1, h, '#a39b84'); rect(x, y, 4, 1, XMAS ? '#ffffff' : '#f5eedb');
+    if (XMAS) rect(x, y - 1, 4, 1, '#eef4ff');
+  }
+  // huecos entre postes donde se cuelgan las medias, del centro hacia afuera
+  fenceGaps = [];
+  for (let lx = 6 - 22; lx < VW; lx += 22) if (lx + 10 >= 1 && lx + 15 <= VW - 1) fenceGaps.push(lx + 10);
+  fenceGaps.sort((a, b) => Math.abs(a + 2 - VW / 2) - Math.abs(b + 2 - VW / 2));
+  if (XMAS) {
+    // guirnalda que cuelga entre poste y poste
+    for (let x = 0; x < PW; x++) {
+      const f = ((x / RS - 8) % 22 + 22) % 22 / 22, sag = Math.round(Math.sin(f * Math.PI) * 2.5 * RS);
+      const y = G + 3 * RS + sag;
+      rect(x, y, 1, 2, x % 3 ? '#1d6b47' : '#2a9b45');
+      px(x, y - 1, (x * 7) % 5 ? '#0f3d2c' : '#2a9b45');
+      if (x % (4 * RS) === 0) light(x, y + 2);
+    }
   }
   // Flores
   const nf = Math.round(VW / 7);
   for (let k = 0; k < nf; k++) {
     const fx = Math.round(rnd() * PW), fy = Math.round(G + (14 + rnd() * 15) * RS);
     const col = ['#f4f7ff', '#ff9fbf', '#b8d8ff', '#ffe14d'][(rnd() * 4) | 0];
+    if (XMAS) { px(fx, fy, '#ffffff'); if (k % 3 === 0) { px(fx - 1, fy, '#dfe9ff'); px(fx + 1, fy, '#dfe9ff'); } continue; }
     px(fx, fy + 2, '#1f6b2c');
     px(fx - 1, fy, col); px(fx + 1, fy, col); px(fx, fy - 1, col); px(fx, fy + 1, col);
     px(fx, fy, '#ffd23f');
   }
   // Franja inferior (marcador)
-  rect(0, S0, PW, PH - S0, '#0a2416');
-  rect(0, S0, PW, 2, '#164d2b');
+  rect(0, S0, PW, PH - S0, XMAS ? '#0c1838' : '#0a2416');
+  rect(0, S0, PW, 2, XMAS ? '#1d2f5e' : '#164d2b');
 
   // ---- Nubes y estrellas ----
   clouds = [];
@@ -895,6 +1159,12 @@ function buildScene() {
     x: snap(Math.random() * VW), y: snap(12 + Math.random() * (GROUND_Y - 40)),
     p: Math.random() * 6.28, s: rand(1, 4), c: Math.random() < 0.25 ? '#9fb4ff' : '#ffffff', big: Math.random() < 0.06
   }));
+  // dos capas: lejana (chica y lenta, detrás del paisaje) y cercana (delante de todo)
+  flakes = Array.from({ length: Math.round(VW * H / 420) }, () => {
+    const near = Math.random() < 0.3;
+    return { x: Math.random() * VW, y: Math.random() * H, v: near ? rand(14, 22) : rand(5, 10), a: rand(2, 6), f: rand(0.5, 1.5),
+             p: Math.random() * 6.28, z: near ? 1 : 0.5, near };
+  });
 }
 
 // ======================================================================
@@ -964,7 +1234,15 @@ const SFX = {
   mother(p)  { AudioSys.tone(p ? 620 : 760, 0.12, 'square', 0.03); },
   motherHit(){ AudioSys.noise(0.4, 0.3, 1500); arp([880, 660, 880, 1100], 0.08, 0.08); },
   over()     { arp([392, 330, 262, 196], 0.25, 0.3, 'square', 0.1); },
-  start()    { arp([262, 330, 392, 523], 0.08, 0.1, 'square', 0.09); }
+  start()    { arp([262, 330, 392, 523], 0.08, 0.1, 'square', 0.09); },
+  // modo navideño
+  jingle(v = 0.03) { for (let i = 0; i < 4; i++) AudioSys.tone(rand(2600, 4200), 0.08, 'sine', v, null, i * 0.06); AudioSys.noise(0.25, v * 1.5, 9000); },
+  hoho()     { [0, 0.24, 0.48].forEach((d, i) => AudioSys.tone(196 - i * 14, 0.2, 'sawtooth', 0.08, 150 - i * 12, d)); },
+  freeze()   { arp([2093, 1760, 1568, 1319, 1047, 880], 0.04, 0.25, 'triangle', 0.07); AudioSys.noise(0.5, 0.12, 8000); },
+  shatter()  { AudioSys.noise(0.3, 0.25, 9000); AudioSys.tone(1800, 0.25, 'triangle', 0.08, 500); },
+  star()     { arp([784, 988, 1175, 1568, 1976, 2349], 0.06, 0.3, 'triangle', 0.08); },
+  thief()    { AudioSys.tone(130, 0.35, 'sawtooth', 0.08, 70); AudioSys.tone(98, 0.35, 'square', 0.04, 60, 0.12); },
+  gift()     { arp([523, 659, 784, 1047, 1319], 0.05, 0.1, 'triangle', 0.11); SFX.jingle(0.035); }
 };
 
 // ======================================================================
@@ -1014,6 +1292,38 @@ function buildMainTrack() {
   return { bpm: 150, loop: true, ev };
 }
 
+// Navidad: "Jingle Bells" (J. L. Pierpont, 1857, dominio público) con ritmo de merengue;
+// los cascabeles toman el lugar de la güira y una campanita dobla la melodía.
+function buildXmasTrack() {
+  const ev = Array.from({ length: 256 }, () => []);
+  const CH = {
+    C: ['C2', 'G2', ['C4', 'E4', 'G4']],
+    F: ['F2', 'C3', ['A3', 'C4', 'F4']],
+    G7: ['G2', 'D3', ['B3', 'D4', 'F4']],
+    D7: ['D2', 'A2', ['C4', 'D4', 'F#4']]
+  };
+  const prog = ['C', 'C', 'C', 'C', 'F', 'C', 'D7', 'G7', 'C', 'C', 'C', 'C', 'F', 'C', 'G7', 'C'];
+  const bells = [[0, 'E5', 3], [4, 'E5', 3], [8, 'E5', 7]];
+  const way = [[[0, 'E5', 3], [4, 'G5', 3], [8, 'C5', 5], [14, 'D5', 2]], [[0, 'E5', 14]]];
+  const fun = [[[0, 'F5', 3], [4, 'F5', 3], [8, 'F5', 5], [14, 'F5', 2]], [[0, 'F5', 3], [4, 'E5', 3], [8, 'E5', 3], [12, 'E5', 2], [14, 'E5', 2]]];
+  const melody = [bells, bells, ...way, ...fun, [[0, 'E5', 3], [4, 'D5', 3], [8, 'D5', 3], [12, 'E5', 3]], [[0, 'D5', 7], [8, 'G5', 7]],
+                  bells, bells, ...way, ...fun, [[0, 'G5', 3], [4, 'G5', 3], [8, 'F5', 3], [12, 'D5', 3]], [[0, 'C5', 14]]];
+  prog.forEach((c, b) => {
+    const [root, fifth, triad] = CH[c], o = b * 16;
+    ev[o].push(['bass', root, 3]);
+    ev[o + 6].push(['bass', fifth, 2]);
+    ev[o + 8].push(['bass', root, 3]);
+    ev[o + 14].push(['bass', fifth, 2]);
+    for (const st of [2, 6, 10, 14]) ev[o + st].push(['chord', triad]);
+    ev[o].push(['tam']); ev[o + 8].push(['tam']);
+    ev[o + 4].push(['slap']); ev[o + 12].push(['slap']);
+    if (b % 2) for (const st of [13, 14, 15]) ev[o + st].push(['roll']);
+    for (let q = 0; q < 16; q += 4) { ev[o + q].push(['jingle', 1]); ev[o + q + 2].push(['jingle', 0]); }
+    for (const [st, n, len] of melody[b]) { ev[o + st].push(['acc', n, len]); ev[o + st].push(['glock', n]); }
+  });
+  return { bpm: 150, loop: true, ev };
+}
+
 // Suspenso: Mi menor, bajo insistente, trémolo agudo y latido
 function buildSuspenseTrack() {
   const ev = Array.from({ length: 32 }, () => []);
@@ -1041,13 +1351,14 @@ function buildVictoryTrack() {
 }
 
 const Music = {
-  tracks: { main: buildMainTrack(), suspense: buildSuspenseTrack(), victory: buildVictoryTrack() },
+  tracks: { main: buildMainTrack(), xmas: buildXmasTrack(), suspense: buildSuspenseTrack(), victory: buildVictoryTrack() },
   track: null, wanted: undefined, step: 0, next: 0, out: null, mainPos: 0,
   want(name) {                        // cambia de pista solo si cambió lo que se pide
     if (name === this.wanted) return;
-    if (this.track === 'main') this.mainPos = this.step;
+    const isMain = n => n === 'main' || n === 'xmas';
+    if (isMain(this.track)) this.mainPos = this.step;
     // tras el suspenso el tema principal sigue desde el compás donde iba
-    const resume = name === 'main' && this.wanted === 'suspense';
+    const resume = isMain(name) && this.wanted === 'suspense';
     this.wanted = name;
     this.track = name;
     this.step = resume ? Math.floor(this.mainPos / 16) * 16 : 0;
@@ -1136,6 +1447,18 @@ const Music = {
         break;
       }
       case 'hat': this.noise(t, 0.035, this.filt('highpass', 7000, this.env(t, 0.03, 0.035, 0.025))); break;
+      case 'jingle': {                // cascabeles de trineo: ruido muy agudo + dos campanitas
+        const dur = a ? 0.12 : 0.05;
+        this.noise(t, dur, this.filt('highpass', 7000, this.env(t, a ? 0.045 : 0.028, dur, dur * 0.8)));
+        if (a) { const g = this.env(t, 0.012, 0.09, 0.08); this.osc('sine', 3520, t, 0.09, g); this.osc('sine', 4430, t, 0.09, g); }
+        break;
+      }
+      case 'glock': {                 // campanita que dobla la melodía una octava arriba
+        const g = ac.createGain();
+        g.gain.setValueAtTime(0.03, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45); g.connect(this.out);
+        this.osc('sine', nf(a) * 2, t, 0.45, g);
+        break;
+      }
     }
   }
 };
@@ -1178,10 +1501,10 @@ function maybeInvite() {
 // Qué pista corresponde al momento del juego
 function musicFor() {
   switch (state) {
-    case 'title': return 'main';
+    case 'title': return XMAS ? 'xmas' : 'main';
     case 'playing': case 'dying':
       // suspenso solo mientras una nave se está llevando una vaca
-      return abductors.some(a => a.state === 'beam' || a.state === 'absorb' || a.state === 'leave') ? 'suspense' : 'main';
+      return abductors.some(a => a.state === 'beam' || a.state === 'absorb' || a.state === 'leave') ? 'suspense' : XMAS ? 'xmas' : 'main';
     case 'raid': return 'suspense';
     case 'levelclear': return 'victory';
     default: return null;
@@ -1228,22 +1551,26 @@ let truckLost = false;
 let gt = 0;                   // reloj de juego (se detiene en pausa)
 let DF = null;                // parámetros de dificultad de la oleada actual
 
-const player = { x: W / 2 - TRUCK_W / 2, y: PLAYER_Y, dir: 1, inv: 0, triple: 0 };
+const player = { x: W / 2 - TRUCK_W / 2, y: PLAYER_Y, dir: 1, inv: 0, triple: 0, shield: false };
 let shots = [], eshots = [], inv = [], abductors = [], powerups = [], particles = [], floaters = [], splats = [];
 let mother = null;
+// Modo navideño: Santa, ovni gruñón, gorritos caídos, medias en la cerca y efectos de los regalos
+let santa = null, santaT = rand(2, 4), grumpy = null, hats = [];
+let stockings = 0, stockAt = -9, stockBonus = 0, waveLost = false;
+let freezeT = 0, starT = 0, fgt = 0;   // fgt: reloj de la flota (se detiene mientras está congelada)
 let form = { x: 48, y: 34, dir: 1, t: 0, frame: 0, note: 0 };
 
 // Posición de casilla en la formación + movimiento propio de cada tipo de nave
 const slotX = i => form.x + i.c * COLG + 2;
 const slotY = i => form.y + i.r * ROWG + 3;
 function offX(i) {
-  let o = DF ? Math.sin(gt * 1.6 + i.r * 1.2) * DF.sway : 0;           // filas ondulando
-  if (i.type === 1) o += Math.sin(gt * 2.5 + i.r + i.c * 0.5) * 1.5;    // cazas se balancean
+  let o = DF ? Math.sin(fgt * 1.6 + i.r * 1.2) * DF.sway : 0;           // filas ondulando
+  if (i.type === 1) o += Math.sin(fgt * 2.5 + i.r + i.c * 0.5) * 1.5;    // cazas se balancean
   return o;
 }
 function offY(i) {
-  if (i.type === 0) return Math.sin(gt * 3 + i.c * 0.8) * 1.5;         // platillos flotan
-  if (i.type === 2) return Math.abs(Math.sin(gt * 2 + i.c)) * -1;      // bombarderos rebotan
+  if (i.type === 0) return Math.sin(fgt * 3 + i.c * 0.8) * 1.5;         // platillos flotan
+  if (i.type === 2) return Math.abs(Math.sin(fgt * 2 + i.c)) * -1;      // bombarderos rebotan
   return 0;
 }
 const invX = i => i.dive ? i.dive.x : slotX(i) + offX(i);
@@ -1252,7 +1579,7 @@ const inFormation = i => i.alive && !i.dive;
 const aliveCount = () => inv.reduce((n, i) => n + (i.alive ? 1 : 0), 0);
 
 // ---------- Pacas de heno (destructibles por píxel de sprite) ----------
-const HAY = [null, '#e8c25a', '#c99a3a', '#7a4a1c', '#f6dc8a', '#9b6630', '#a8782a'].map(c => c && hexRgb(c));
+const HAY = [null, '#e8c25a', '#c99a3a', '#7a4a1c', '#f6dc8a', '#9b6630', '#a8782a', '#eef4ff', '#b9c9ea'].map(c => c && hexRgb(c));
 function makeShield(x, y) {
   const w = 24 * RS, h = 14 * RS;
   const s = { x, y, w, h, px: new Uint8Array(w * h), cv: newCanvas(w, h), dirty: true };
@@ -1261,7 +1588,10 @@ function makeShield(x, y) {
     const dx = Math.max(0, 3 - xx, xx - (w - 4)), dy = Math.max(0, 3 - yy, yy - (h - 4));
     if (dx * dx + dy * dy > 9) continue;
     let v = 1;
-    if (xx === 11 || xx === 12 || xx === 35 || xx === 36) v = xx % 2 ? 5 : 3;      // cuerdas
+    const snowLine = XMAS ? 2 + Math.round(Math.sin(xx * 0.7) + Math.random() * 0.8) : -1;   // capa de nieve encima
+    if (yy <= snowLine) v = 7;
+    else if (yy === snowLine + 1) v = 8;
+    else if (xx === 11 || xx === 12 || xx === 35 || xx === 36) v = xx % 2 ? 5 : 3;      // cuerdas
     else if (yy <= 2 || xx <= 1) v = 4;
     else if (yy >= h - 3 || xx >= w - 2) v = 6;
     else if ((yy % 3 === 0 && Math.random() < 0.55) || Math.random() < 0.07) v = 2;
@@ -1307,7 +1637,7 @@ function carve(s, cx, cy, r) {
     if (d2 <= r * r && (d2 <= 4 || Math.random() < 0.7)) s.px[y * s.w + x] = 0;
   }
   s.dirty = true;
-  burst(s.x + cx / RS, s.y + cy / RS, ['#e8c25a', '#b8862b', '#f6dc8a'], 6, 30, 90);
+  burst(s.x + cx / RS, s.y + cy / RS, XMAS ? ['#e8c25a', '#eef4ff', '#f6dc8a'] : ['#e8c25a', '#b8862b', '#f6dc8a'], 6, 30, 90);
   SFX.hay();
 }
 function eraseShieldRect(x, y, w, h) {
@@ -1321,7 +1651,7 @@ function eraseShieldRect(x, y, w, h) {
 
 // ---------- Vaquitas ----------
 function newCow(x) {
-  return { x, y: COW_Y, vx: 0, vy: 0, dir: Math.random() < 0.5 ? -1 : 1, t: rand(0.5, 2), frame: 0, ft: 0, state: 'free', target: null, scale: 1, rot: 0, panic: 0 };
+  return { x, y: COW_Y, vx: 0, vy: 0, dir: Math.random() < 0.5 ? -1 : 1, t: rand(0.5, 2), frame: 0, ft: 0, state: 'free', target: null, scale: 1, rot: 0, panic: 0, hat: true };
 }
 function makeCows() {
   const n = COMPACT ? 4 : 5;
@@ -1340,6 +1670,7 @@ function burst(x, y, colors, n, spd = 50, grav = 60) {
   }
 }
 function floater(text, x, y, color, dur = 1.3) { floaters.push({ text, x, y, color, t: dur }); }
+const groundFx = () => XMAS ? ['#dfe9ff', '#a9bde0'] : ['#4cc35a', PAL.l];   // salpicaduras al tocar el suelo
 
 // ======================================================================
 //  Flujo del juego
@@ -1350,7 +1681,8 @@ function newGame() {
   truckLost = false;
   cows = makeCows();
   particles = []; floaters = [];
-  player.triple = 0; player.dir = 1;
+  player.triple = 0; player.dir = 1; player.shield = false;
+  stockings = 0; hats = [];
   startWave();
   state = 'playing';
   paused = false;
@@ -1364,9 +1696,10 @@ function toTitle() {
   shots = []; eshots = []; abductors = []; powerups = []; splats = []; inv = [];
   particles = []; floaters = [];
   mother = null; banner = null;
+  santa = null; santaT = rand(2, 4); grumpy = null; hats = []; freezeT = starT = 0;
   shields = makeShields();
   cows = makeCows();
-  player.x = W / 2 - TRUCK_W / 2; player.dir = 1; player.inv = 0; player.triple = 0;
+  player.x = W / 2 - TRUCK_W / 2; player.dir = 1; player.inv = 0; player.triple = 0; player.shield = false;
   hi = loadHi();
   maybeInvite();
 }
@@ -1374,7 +1707,9 @@ function toTitle() {
 function startWave() {
   DF = D();
   shots = []; eshots = []; abductors = []; powerups = []; splats = [];
-  mother = null;
+  mother = null; grumpy = null;
+  freezeT = starT = 0; waveLost = false; stockBonus = 0;
+  if (!santa) santaT = rand(8, 14);
   shields = makeShields();
   inv = [];
   const greenRows = 1 + Math.ceil((ROWS - 1) / 2);
@@ -1422,7 +1757,8 @@ function startRaid() {
   truckLost = true;
   lives = 0;
   shots = []; eshots = []; powerups = [];
-  player.triple = 0;
+  player.triple = 0; player.shield = false;
+  grumpy = null; freezeT = starT = 0;
   for (const i of inv) if (i.dive) i.dive.phase = 'return';
   // en celular la franja se va antes de que las naves suban con las vacas, para no taparlas
   banner = COMPACT ? { text: tr('noDef'), sub: trc('raidSub'), t: 2.5 }
@@ -1465,6 +1801,7 @@ function update(dt) {
   clock += dt;
   if (paused) return;
   gt += dt;
+  if (freezeT <= 0) fgt += dt;
 
   for (const p of particles) { p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; }
   particles = particles.filter(p => p.life > 0);
@@ -1510,6 +1847,8 @@ function update(dt) {
       updateCows(dt);
       break;
   }
+  updateSanta(dt);
+  updateHats(dt);
 }
 
 const held = k => kb[k] || tk[k];
@@ -1548,14 +1887,23 @@ function updatePlaying(dt) {
   if (state !== 'playing') return;
   updateMother(dt);
   updatePowerups(dt);
+  updateGrumpy(dt);
   updateCows(dt);
+  if (freezeT > 0) freezeT -= dt;
+  if (starT > 0) starT -= dt;
 
   if (aliveCount() === 0 && abductors.length === 0) {
     waveBonus = cowsLeft() * 50;
     addScore(waveBonus);
+    // modo navideño: oleada sin perder vacas = una media más en la cerca (cada una vale más)
+    if (XMAS && !waveLost) {
+      stockings++; stockAt = clock;
+      stockBonus = 100 * stockings;
+      addScore(stockBonus);
+    }
     state = 'levelclear';
-    stateTimer = 2.6;
-    shots = []; eshots = []; mother = null;   // la fanfarria de victoria la pone la música
+    stateTimer = stockBonus ? 3.2 : 2.6;
+    shots = []; eshots = []; mother = null; grumpy = null;   // la fanfarria de victoria la pone la música
   }
 }
 
@@ -1594,6 +1942,7 @@ function stepShot(s, dt) {
     if (!a.dead && overlap(s.x, s.y, 3, 5, a.x, a.y, 12, 8)) { killAbductor(a); s.dead = true; return; }
   }
   if (mother && overlap(s.x, s.y, 3, 5, mother.x, mother.y, 16, 7)) { killMother(); s.dead = true; return; }
+  if (grumpy && overlap(s.x, s.y, 3, 5, grumpy.x, grumpy.y, 12, 6)) { killGrumpy(); s.dead = true; return; }
   for (const e of eshots) {
     if (!e.dead && overlap(s.x, s.y, 3, 5, e.x - 1, e.y, 5, 7)) {
       e.dead = true; s.dead = true;
@@ -1608,6 +1957,7 @@ function killUfo(x, y, type, mult) {
   addScore(pts);
   splats.push({ x, y, t: 0.18 });
   burst(x + 6, y + 4, UFO_COLORS[type].concat([PAL.w]), 18, 60, 50);
+  if (XMAS) burst(x + 6, y + 4, ['#ff5a4e', '#5bea6b', '#ffe14d', PAL.w], 10, 55, 35);   // confeti
   if (mult > 1) floater('+' + pts, x + 6, y - 4, PAL.y);
   shake = Math.max(shake, 1.5);
   SFX.inv();
@@ -1633,7 +1983,7 @@ function killMother() {
   floater(String(pts), mother.x + 8, mother.y + 10, PAL.y, 1.6);
   burst(mother.x + 8, mother.y + 4, [PAL.m, PAL.c, PAL.y, PAL.w], 36, 80, 50);
   splats.push({ x: mother.x + 2, y: mother.y, t: 0.25 });
-  powerups.push({ x: clamp(mother.x + 5, 0, W - 6), y: mother.y + 6, vy: 38 * VD, t: 0, state: 'fall', life: 0 });
+  powerups.push({ x: clamp(mother.x + 5, 0, W - 6), y: mother.y + 6, vy: 38 * VD, t: 0, state: 'fall', life: 0, gift: null });
   mother = null;
   shake = 3;
   SFX.motherHit();
@@ -1644,6 +1994,7 @@ function stepInterval(n) {
 }
 
 function updateFormation(dt) {
+  if (freezeT > 0) return;
   const alive = inv.filter(i => i.alive);
   if (!alive.length) return;
   form.t -= dt;
@@ -1683,6 +2034,7 @@ function enemyShot(x, y) {
 }
 
 function updateEnemyFire(dt) {
+  if (freezeT > 0) return;
   fireT -= dt;
   if (fireT > 0) return;
   fireT = rand(0.8, 1.7) / DF.fire;
@@ -1711,6 +2063,7 @@ function startDive() {
 }
 
 function updateDivers(dt, forceReturn = false) {
+  if (freezeT > 0 && !forceReturn) return;
   if (!forceReturn) {
     diveT -= dt;
     if (diveT <= 0) {
@@ -1760,13 +2113,19 @@ function updateEShots(dt) {
     if (e.ft > 0.08) { e.ft = 0; e.frame ^= 1; }
     if (e.y + 7 >= GROUND_Y) {
       e.dead = true;
-      burst(e.x + 1, GROUND_Y - 1, ['#4cc35a', PAL.l], 5, 25, 60);
+      burst(e.x + 1, GROUND_Y - 1, groundFx(), 5, 25, 60);
       continue;
     }
     const sh = hitShield(e.x, e.y, 3, 7);
     if (sh) { carve(sh.s, sh.x, Math.min(sh.s.h - 1, sh.y + 2), 4); e.dead = true; continue; }
     if (player.inv <= 0 && overlap(e.x, e.y, 3, 7, player.x + 1, player.y + 2, TRUCK_W - 2, 9)) {
       e.dead = true;
+      if (player.shield) {                 // el escudo de hielo aguanta un golpe
+        player.shield = false; player.inv = 1.2;
+        burst(player.x + 10, player.y + 4, ['#ffffff', '#cdeeff', '#7fc6ff'], 26, 70, 60);
+        shake = 2; SFX.shatter();
+        continue;
+      }
       hitPlayer();
       break;
     }
@@ -1819,10 +2178,11 @@ function startAbduction() {
 
 function updateAbductions(dt, raid = false) {
   if (!raid) {
+    if (freezeT > 0) return;
     abductT -= dt;
     if (abductT <= 0) {
       abductT = Math.max(2.5, rand(7, 12) / DF.abduct);
-      if (abductors.length < DF.maxAbd && aliveCount() > 1) startAbduction();
+      if (abductors.length < DF.maxAbd && aliveCount() > 1 && starT <= 0) startAbduction();
     }
   }
   const hoverY = clamp(formBottom() + 8, GROUND_Y - 100, GROUND_Y - 62);
@@ -1871,6 +2231,10 @@ function updateAbductions(dt, raid = false) {
         a.state = 'absorb'; a.at = 0; a.flash = 0.25;
         c.state = 'carried';
         SFX.slurp();
+        if (XMAS && c.hat) {                 // el gorrito se le cae y queda en el pasto
+          c.hat = false;
+          hats.push({ x: c.x + 6, y: c.y, vx: rand(-12, 12), vy: -15, t: 0, state: 'fall' });
+        }
       }
     } else if (a.state === 'absorb') {
       // la vaca desaparece dentro de la nave y el rayo se recoge
@@ -1890,6 +2254,7 @@ function updateAbductions(dt, raid = false) {
       if (a.y < -30) {
         a.dead = true;
         c.state = 'gone'; c.target = null; c.scale = 1; c.rot = 0;
+        waveLost = true;
         if (!raid) floater(tr('abducted'), clamp(a.x + 6, 50, W - 50), 30, PAL.r, 1.8);
         shake = 2;
         if (cowsLeft() === 0) { gameOver('lostAll'); return; }
@@ -1920,13 +2285,17 @@ function updateCows(dt) {
       if (c.x > W - 16) { c.x = W - 16; c.vx = -Math.abs(c.vx); c.dir = -1; }
       c.ft += dt;
       if (c.ft > (c.vx ? 0.22 : 0.7)) { c.ft = 0; c.frame ^= 1; }
+      if (!c.hat) {
+        const h = hats.find(h => h.state === 'ground' && Math.abs(h.x - (c.x + 6)) < 4);
+        if (h) { h.dead = true; c.hat = true; burst(c.x + 9, c.y - 1, ['#ff5a4e', PAL.w], 6, 20, 30); }
+      }
     } else if (c.state === 'falling') {
       c.vy += 320 * dt;
       c.y += c.vy * dt;
       if (c.y >= COW_Y) {
         c.y = COW_Y; c.vy = 0; c.vx = 0; c.t = 0.8;
         c.state = 'free';
-        burst(c.x + 6, COW_Y + 8, ['#4cc35a', '#2b8a3c', PAL.w], 10, 30, 80);
+        burst(c.x + 6, COW_Y + 8, XMAS ? ['#dfe9ff', '#a9bde0', PAL.w] : ['#4cc35a', '#2b8a3c', PAL.w], 10, 30, 80);
       }
     }
   }
@@ -1938,7 +2307,7 @@ function updateMother(dt) {
     motherT -= dt;
     if (motherT <= 0) {
       motherT = rand(16, 26);
-      if (aliveCount() >= 5) {
+      if (aliveCount() >= 5 && !santa) {
         // entra desde el borde real de la pantalla (en PC hay paisaje a los lados de la zona de juego)
         const d = Math.random() < 0.5 ? 1 : -1;
         mother = { x: d > 0 ? -OX - 18 : VW - OX + 2, y: 15, dir: d, ft: 0, frame: 0, trail: 0 };
@@ -1963,27 +2332,32 @@ function moveMother(dt) {
   if (mother.x < -OX - 20 || mother.x > VW - OX + 4) mother = null;
 }
 
-// Cartón de leche triple: brota de la nave, cae meciéndose, se queda un rato en el pasto
-// (todavía se puede recoger), parpadea antes de irse y se desvanece con destellos.
+// Cartón de leche triple (de la nave nodriza) y regalos de Santa (bajan en paracaídas):
+// brotan, caen meciéndose, se quedan un rato en el suelo (todavía se pueden recoger),
+// parpadean antes de irse y se desvanecen con destellos.
 function updatePowerups(dt) {
   for (const p of powerups) {
     p.t += dt;
+    if (p.state === 'stolen') continue;          // lo lleva el ovni gruñón
+    const ph = p.gift ? 6 : 8;
     if (p.state === 'fall') {
       p.y += p.vy * dt;
-      p.x = clamp(p.x + Math.sin(p.t * 3) * 6 * dt, 0, W - 6);
-      if (p.y >= GROUND_Y - 8) {
-        p.y = GROUND_Y - 8; p.state = 'ground'; p.life = 3;
-        burst(p.x + 3, GROUND_Y, ['#4cc35a', PAL.w], 6, 25, 80);
+      p.x = clamp(p.x + Math.sin(p.t * 3) * (p.gift ? 10 : 6) * dt, 0, W - 6);
+      if (p.y >= GROUND_Y - ph) {
+        p.y = GROUND_Y - ph; p.state = 'ground'; p.life = p.gift ? 4.5 : 3;
+        burst(p.x + 3, GROUND_Y, [groundFx()[0], PAL.w], 6, 25, 80);
+        if (p.gift) maybeGrumpy(p);
       }
     } else if (p.state === 'ground') {
-      p.life -= dt;
+      if (!(grumpy && grumpy.target === p)) p.life -= dt;   // no se va mientras el ladrón viene por él
       if (p.life <= 0) { p.state = 'fade'; p.life = 0.35; }
     } else {
       p.life -= dt;
       if (p.life <= 0) { p.dead = true; burst(p.x + 3, p.y + 4, [PAL.w, PAL.c], 8, 30, -20); continue; }
     }
-    if (p.state !== 'fade' && overlap(p.x, p.y, 6, 8, player.x, player.y, TRUCK_W, 11)) {
+    if (p.state !== 'fade' && overlap(p.x, p.y, 6, ph, player.x, player.y, TRUCK_W, 11)) {
       p.dead = true;
+      if (p.gift) { applyGift(p.gift); burst(p.x + 3, p.y + 3, ['#ff5a4e', '#5bea6b', '#ffe14d', PAL.w], 22, 55, 40); continue; }
       player.triple = DF.triple;
       floater(tr('triple'), player.x + TRUCK_W / 2, player.y - 8, PAL.c, 1.6);
       burst(p.x + 3, p.y + 4, [PAL.w, PAL.b, PAL.c], 18, 50, 40);
@@ -1991,6 +2365,158 @@ function updatePowerups(dt) {
     }
   }
   powerups = powerups.filter(p => !p.dead);
+}
+
+// ---------- Modo navideño ----------
+// Qué trae cada regalo (peso = probabilidad relativa; la vida extra es rara: 1 de cada 15)
+const GIFTS = [['triple', 3], ['freeze', 3], ['shield', 3], ['star', 3], ['hay', 2], ['life', 1]];
+function pickGift() {
+  let r = Math.random() * GIFTS.reduce((a, g) => a + g[1], 0);
+  for (const [k, w] of GIFTS) if ((r -= w) < 0) return k;
+  return 'triple';
+}
+function newGift(x, y, kind = pickGift()) {
+  return { x: clamp(x, 0, W - 6), y, vy: 28 * VD, t: 0, state: 'fall', life: 0, gift: kind, v: (Math.random() * 3) | 0 };
+}
+function applyGift(kind) {
+  const fx = player.x + TRUCK_W / 2, fy = player.y - 8;
+  SFX.gift();
+  switch (kind) {
+    case 'triple':
+      player.triple = DF.triple;
+      floater(tr('triple'), fx, fy, PAL.c, 1.6);
+      break;
+    case 'freeze':                       // la flota se queda quieta, sin disparar ni abducir
+      freezeT = 5;
+      for (const i of inv) if (i.alive) burst(invX(i) + 6, invY(i) + 4, ['#ffffff', '#cdeeff'], 3, 20, 10);
+      floater(trc('frozen'), fx, fy, '#cdeeff', 1.8);
+      SFX.freeze();
+      break;
+    case 'shield':
+      player.shield = true;
+      floater(trc('iceShield'), fx, fy, '#cdeeff', 1.6);
+      break;
+    case 'star':                         // corta todos los rayos tractores y protege a las vacas un rato
+      starT = 10;
+      for (const a of abductors) if (!a.dead) killAbductor(a);
+      floater(trc('star'), fx, fy, PAL.y, 1.8);
+      SFX.star();
+      break;
+    case 'hay':
+      shields = makeShields();
+      for (const sh of shields) burst(sh.x + 12, sh.y + 7, ['#e8c25a', '#f6dc8a', '#eef4ff'], 12, 40, 60);
+      floater(tr('newHay'), fx, fy, '#f6dc8a', 1.6);
+      break;
+    case 'life':
+      lives = Math.min(lives + 1, 5);
+      floater(tr('extraLife'), fx, fy, PAL.g, 1.8);
+      break;
+  }
+}
+
+// Santa cruza el cielo de fondo y, durante la partida, suelta un regalo
+const SANTA_W = 36;
+const sleighX = () => santa.dir > 0 ? santa.x + 4 : santa.x + SANTA_W - 4;
+function updateSanta(dt) {
+  if (!XMAS) return;
+  if (!santa) {
+    santaT -= dt;
+    if (santaT <= 0 && !mother && state !== 'raid') {
+      santaT = rand(20, 30);
+      const d = Math.random() < 0.5 ? 1 : -1;
+      santa = { x: d > 0 ? -OX - SANTA_W - 2 : VW - OX + 2, y: TOP + 4, dir: d, dropX: rand(16, W - 22),
+                dropped: state === 'title' || state === 'gameover', bell: 0, dust: 0 };
+    }
+    return;
+  }
+  santa.x += santa.dir * 34 * HS * dt;
+  santa.y = TOP + 4 + Math.sin(clock * 2) * 1.5;
+  const sx = sleighX();
+  if (!santa.dropped && state === 'playing' && !truckLost && (santa.dir > 0 ? sx >= santa.dropX : sx <= santa.dropX)) {
+    santa.dropped = true;
+    powerups.push(newGift(sx - 3, santa.y + 5));
+    floater(tr('hoho'), clamp(sx, 20, W - 20), santa.y + 12, '#ff8f86', 1.2);
+    SFX.hoho();
+  }
+  santa.bell -= dt;
+  if (santa.bell <= 0 && sx > -OX && sx < VW - OX) { santa.bell = 0.6; SFX.jingle(0.012); }
+  santa.dust -= dt;
+  if (santa.dust <= 0 && particles.length < 600) {    // polvo de estrellas detrás del trineo
+    santa.dust = 0.05;
+    particles.push({ x: sx - santa.dir * 4, y: santa.y + rand(3, 6), vx: -santa.dir * rand(4, 12), vy: rand(-2, 4),
+                     life: rand(0.4, 0.8), c: pick([PAL.y, PAL.w, '#fff2a8']), g: 6, z: 0.5 });
+  }
+  if (santa.x < -OX - SANTA_W - 6 || santa.x > VW - OX + 6) santa = null;
+}
+
+// Gorritos que se les cayeron a las vacas abducidas: bajan como hojita y quedan en el pasto
+function updateHats(dt) {
+  for (const h of hats) {
+    if (h.state !== 'fall') continue;
+    h.t += dt;
+    h.vy = Math.min(h.vy + 60 * dt, 26);
+    h.y += h.vy * dt;
+    h.x = clamp(h.x + (h.vx + Math.sin(h.t * 4) * 14) * dt, 4, W - 4);
+    if (h.y >= COW_Y + 5) { h.y = COW_Y + 5; h.state = 'ground'; }
+  }
+  hats = hats.filter(h => !h.dead);
+  if (hats.length > 8) hats.shift();
+}
+
+// Ovni gruñón: aparece cuando un regalo cae al suelo y trata de robárselo
+function maybeGrumpy(p, force = false) {
+  if (!XMAS || grumpy || state !== 'playing' || (!force && (level < 2 || Math.random() > 0.45))) return;
+  const side = Math.random() < 0.5 ? -1 : 1;
+  grumpy = { x: side < 0 ? -16 : W + 4, y: TOP + 6, sx: side < 0 ? -16 : W + 4, sy: TOP + 6, u: 0, state: 'in',
+             target: p, t: 0, frame: 0, ft: 0, side, vx: 0, vy: 0 };
+  floater(tr('thief'), clamp(p.x + 3, 24, W - 24), GROUND_Y - 34, PAL.g, 1.2);
+  SFX.thief();
+}
+function updateGrumpy(dt) {
+  const g = grumpy;
+  if (!g) return;
+  g.ft += dt;
+  if (g.ft > 0.12) { g.ft = 0; g.frame ^= 1; }
+  const p = g.target;
+  if (g.state === 'in') {
+    if (!p || p.dead || p.state !== 'ground') { g.state = 'out'; g.target = null; g.vy = 0; g.vx = -g.side * 50 * HS; return; }
+    const tx = p.x - 3, ty = GROUND_Y - 26;
+    const dist = Math.hypot(tx - g.sx, ty - g.sy) || 1;
+    g.u = Math.min(1, g.u + dt * 85 * VD / dist);
+    const e = g.u * g.u * (3 - 2 * g.u);
+    g.x = g.sx + (tx - g.sx) * e;
+    g.y = g.sy + (ty - g.sy) * e - Math.sin(g.u * Math.PI) * 8;
+    if (g.u >= 1) { g.state = 'grab'; g.t = 0; p.state = 'stolen'; p.gy0 = p.y; p.gx0 = p.x; }
+  } else if (g.state === 'grab') {
+    g.t += dt;
+    const k = Math.min(1, g.t / 0.7);
+    p.y = p.gy0 + (g.y + 6 - p.gy0) * k * k;
+    p.x = p.gx0 + (g.x + 3 - p.gx0) * k;
+    if (k >= 1) { g.state = 'out'; g.vy = 0; g.vx = (Math.random() < 0.5 ? -1 : 1) * 45 * HS; }
+  } else {
+    g.vy = Math.max(g.vy - 140 * VD * dt, -90 * VD);
+    g.y += g.vy * dt; g.x += g.vx * dt;
+    if (p && p.state === 'stolen') { p.x = g.x + 3; p.y = g.y + 6; }
+    if (g.y < -16 || g.x < -24 || g.x > W + 12) {
+      if (p && p.state === 'stolen') { p.dead = true; floater(trc('stolen'), W / 2, GROUND_Y - 40, PAL.r, 1.8); }
+      grumpy = null;
+    }
+  }
+}
+function killGrumpy() {
+  const g = grumpy, p = g.target;
+  addScore(200);
+  floater('+200', g.x + 6, g.y - 4, PAL.y);
+  burst(g.x + 6, g.y + 3, [PAL.G, PAL.l, PAL.h, PAL.w], 24, 60, 50);
+  splats.push({ x: g.x, y: g.y - 2, t: 0.18 });
+  shake = Math.max(shake, 2);
+  if (p && p.state === 'stolen') {          // suelta el regalo, que vuelve a bajar en paracaídas
+    p.state = 'fall'; p.vy = 28 * VD; p.t = 0.3; p.y = g.y + 6;
+    floater(trc('recovered'), clamp(g.x + 6, 40, W - 40), g.y + 14, PAL.c, 1.6);
+    SFX.saved();
+  }
+  SFX.inv();
+  grumpy = null;
 }
 
 // ======================================================================
@@ -2061,39 +2587,55 @@ function drawBeam(a) {
 }
 
 function drawCow(c) {
-  const img = SPR.cow[c.frame];
+  const hat = XMAS && c.hat, img = (hat ? SPR.cowHat : SPR.cow)[c.frame], hy = hat ? 3 : 0;   // con gorrito el sprite es 3 más alto
   if (c.state === 'lifted' || c.state === 'carried') {
     if (c.scale <= 0.03) return;
     ctx.save();
     ctx.translate(snap(c.x + 6), snap(c.y + 4));
     ctx.rotate(c.rot);
     ctx.scale(c.dir < 0 ? -c.scale : c.scale, c.scale);
-    ctx.drawImage(img, -6, -4, 12, 8);
+    ctx.drawImage(img, -6, -4 - hy, 12, 8 + hy);
     ctx.restore();
     return;
   }
   let x = c.x;
   if (c.target) x += Math.sin(clock * 40) * 0.5;
-  drawSprite(img, x, c.y, c.dir < 0);
+  drawSprite(img, x, c.y - hy, c.dir < 0);
   if (c.target && Math.floor(clock * 6) % 2) drawText('!', Math.round(c.x + 4), Math.round(c.y) - 9, PAL.y);
 }
 
 const easeOutBack = x => 1 + 2.70158 * (x - 1) ** 3 + 1.70158 * (x - 1) ** 2;
+// Paracaídas del regalo (coordenadas locales: el regalo está en 0,0)
+function drawChute() {
+  for (const [hw, y] of [[2.5, -12.5], [4, -12], [4.5, -11.5], [5, -11], [5, -10.5], [5, -10]]) {
+    for (let x = -hw; x < hw; x += 0.5) {
+      ctx.fillStyle = Math.floor((x + 5) / 2.5) % 2 ? '#f4f7ff' : '#ff5a4e';
+      ctx.fillRect(x, y, 0.5, 0.5);
+    }
+  }
+  ctx.fillStyle = '#c3cde6';
+  for (let t = 0; t <= 1; t += 0.14) {
+    ctx.fillRect(snap(-4.5 + 1.5 * t), snap(-9.5 + 6 * t), 0.5, 0.5);
+    ctx.fillRect(snap(4 - 1.5 * t), snap(-9.5 + 6 * t), 0.5, 0.5);
+  }
+}
 function drawPowerup(p) {
   let alpha = 1, s = p.t < 0.3 ? easeOutBack(p.t / 0.3) : 1;   // brota con rebote
   if (p.state === 'ground' && p.life < 0.9 && Math.floor(clock * 10) % 2) alpha = 0.35;
   if (p.state === 'fade') { const k = p.life / 0.35; alpha = k; s = 1 + (1 - k) * 0.6; }
-  const cx = p.x + 3, cy = p.y + 4, r = 5 + Math.sin(clock * 6) * 0.8;
-  ctx.globalAlpha = alpha * 0.22;                 // halo
-  ctx.fillStyle = PAL.c;
+  const gift = p.gift, cx = p.x + 3, cy = p.y + (gift ? 3 : 4), r = 5 + Math.sin(clock * 6) * 0.8;
+  ctx.globalAlpha = alpha * (gift ? 0.14 : 0.22);   // halo
+  ctx.fillStyle = gift ? PAL.w : PAL.c;
   ctx.fillRect(snap(cx - r), snap(cy - r * 0.6), snap(r * 2), snap(r * 1.2));
   ctx.fillRect(snap(cx - r * 0.6), snap(cy - r), snap(r * 1.2), snap(r * 2));
   ctx.globalAlpha = alpha;
   ctx.save();
   ctx.translate(snap(cx), snap(cy));
-  if (p.state === 'fall') ctx.rotate(Math.sin(p.t * 3) * 0.18);
+  if (p.state === 'fall') ctx.rotate(Math.sin(p.t * 3) * (gift ? 0.25 : 0.18));
+  if (gift && p.state === 'fall' && p.t > 0.25) drawChute();
   ctx.scale(s, s);
-  ctx.drawImage(SPR.carton, -3, -4, 6, 8);
+  if (gift) ctx.drawImage(SPR.gift[p.v], -3, -3, 6, 6);
+  else ctx.drawImage(SPR.carton, -3, -4, 6, 8);
   ctx.restore();
   if (Math.floor(clock * 4 + p.x) % 3 === 0) {    // destello
     ctx.fillStyle = PAL.w;
@@ -2116,9 +2658,118 @@ function drawShields() {
   for (const s of shields) { if (s.dirty) renderShield(s); ctx.drawImage(s.cv, s.x, s.y, s.w / RS, s.h / RS); }
 }
 
+// ---------- Dibujo del modo navideño ----------
+function drawLights() {
+  for (const l of xlights) {
+    const v = Math.sin(clock * 2.2 + l.p);
+    ctx.fillStyle = v < -0.35 ? '#2a3354' : l.c;
+    ctx.fillRect(l.x, l.y, 0.5, 0.5);
+    if (v > 0.55) {
+      ctx.globalAlpha = 0.35;
+      ctx.fillStyle = l.c;
+      ctx.fillRect(l.x - 0.5, l.y, 1.5, 0.5); ctx.fillRect(l.x, l.y - 0.5, 0.5, 1.5);
+      ctx.globalAlpha = 1;
+    }
+  }
+}
+function drawSnow(near) {
+  ctx.fillStyle = near ? '#ffffff' : '#9fb0d8';
+  for (const f of flakes) {
+    if (f.near !== near) continue;
+    const y = (f.y + clock * f.v) % (H + 2) - 1;
+    const x = ((f.x + Math.sin(clock * f.f + f.p) * f.a + clock * 3) % VW + VW) % VW;
+    ctx.fillRect(snap(x), snap(y), f.z, f.z);
+  }
+}
+// Medias colgadas en la cerca (coordenadas de la vista completa); la más nueva se mece al colgarse
+function drawStockings() {
+  const n = Math.min(stockings, fenceGaps.length);
+  for (let k = 0; k < n; k++) {
+    const age = k === stockings - 1 ? clock - stockAt : 99;
+    const sw = age < 2.5 ? Math.sin(age * 9) * 0.5 * (1 - age / 2.5) : Math.sin(clock * 1.5 + k) * 0.05;
+    ctx.save();
+    ctx.translate(snap(fenceGaps[k] + 2), snap(GROUND_Y + 4));
+    ctx.rotate(sw);
+    ctx.drawImage(SPR.stocking[k % 2], -2, -1.5, 4, 6.5);
+    ctx.restore();
+  }
+}
+// Santa en su trineo con cuatro renos; dibujado mirando a la derecha y espejado si va a la izquierda
+function drawSanta() {
+  const sn = santa, bob = k => snap(Math.sin(clock * 8 + k) * 0.6), f = Math.floor(clock * 8) % 2;
+  ctx.save();
+  ctx.translate(snap(sn.x + (sn.dir < 0 ? SANTA_W : 0)), snap(sn.y));
+  if (sn.dir < 0) ctx.scale(-1, 1);
+  ctx.fillStyle = '#c9a27a';                           // riendas
+  ctx.fillRect(7, 2.5, 25, 0.5);
+  for (let k = 0; k < 4; k++) ctx.drawImage((k === 3 ? SPR.rudolph : SPR.deer)[(f + k) % 2], 10 + k * 6.5, 0.5 + bob(k), 6, 4.5);
+  ctx.globalAlpha = 0.3 + 0.25 * Math.sin(clock * 6);   // la nariz de Rudolph brilla
+  ctx.fillStyle = '#ff5a4e';
+  ctx.fillRect(34.5, 1.5 + bob(3), 2, 1.5);
+  ctx.globalAlpha = 1;
+  ctx.drawImage(SPR.sleigh, 0, -1 + bob(-1), 8, 6.5);
+  ctx.restore();
+}
+function drawGrumpy() {
+  const g = grumpy, p = g.target;
+  if (g.state === 'grab' && p) {                       // rayo rojizo para levantar el regalo
+    const top = snap(g.y + 6), rows = Math.round((p.y + 6 - top) * RS), cx = snap(g.x + 6);
+    for (let yy = 0; yy < rows; yy++) {
+      const hw = snap(1.5 + yy / RS * 0.25);
+      ctx.fillStyle = `rgba(255,120,140,${((yy + Math.floor(clock * 60)) % 8 < 3 ? 0.4 : 0.15).toFixed(2)})`;
+      ctx.fillRect(cx - hw, top + yy / RS, hw * 2, 1 / RS);
+    }
+  }
+  const ang = g.state === 'in' ? Math.cos(g.u * Math.PI) * 0.3 * -g.side : g.state === 'out' ? clamp(g.vx / 160, -0.3, 0.3) : 0;
+  ctx.save();
+  ctx.translate(snap(g.x + 6), snap(g.y + 3));
+  ctx.rotate(ang);
+  ctx.drawImage(SPR.grumpy[g.frame], -6, -3, 12, 6);
+  ctx.restore();
+}
+function drawHat(h) {
+  ctx.save();
+  ctx.translate(snap(h.x), snap(h.y + 1.75));
+  ctx.rotate(h.state === 'fall' ? Math.sin(h.t * 4) * 0.5 : 0.15);
+  ctx.drawImage(SPR.hat, -2.75, -1.75, 5.5, 3.5);
+  ctx.restore();
+}
+// Estrella protectora: brilla sobre la granja mientras dura
+function drawStar() {
+  const a = Math.min(1, starT / 0.8), cx = W / 2, cy = TOP + 5;
+  ctx.globalAlpha = a * (0.25 + 0.1 * Math.sin(clock * 5));
+  ctx.fillStyle = '#fff2a8';
+  for (let k = 0; k < 8; k++) {
+    const ang = clock * 0.6 + k * Math.PI / 4, len = k % 2 ? 7 : 11;
+    for (let t = 4; t < len; t += 0.5) ctx.fillRect(snap(cx + Math.cos(ang) * t), snap(cy + Math.sin(ang) * t), 0.5, 0.5);
+  }
+  ctx.globalAlpha = a;
+  drawSprite(SPR.star, cx - 2.75, cy - 2.75);
+  ctx.globalAlpha = 1;
+}
+function drawIceShield() {
+  const x = snap(player.x) - 2, y = snap(player.y) - 3, w = TRUCK_W + 4, h = 15;
+  ctx.globalAlpha = 0.12;
+  ctx.fillStyle = '#7fe3ff';
+  ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
+  ctx.globalAlpha = 0.55 + 0.25 * Math.sin(clock * 5);
+  ctx.fillStyle = '#cdeeff';
+  ctx.fillRect(x + 2, y, w - 4, 0.5); ctx.fillRect(x + 2, y + h - 0.5, w - 4, 0.5);
+  ctx.fillRect(x, y + 2, 0.5, h - 4); ctx.fillRect(x + w - 0.5, y + 2, 0.5, h - 4);
+  ctx.fillRect(x + 1, y + 1, 1, 0.5); ctx.fillRect(x + w - 2, y + 1, 1, 0.5);
+  ctx.fillRect(x + 1, y + h - 1.5, 1, 0.5); ctx.fillRect(x + w - 2, y + h - 1.5, 1, 0.5);
+  const t = (clock * 0.7) % 1;                         // destello que recorre el borde
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(snap(x + 2 + t * (w - 5)), y, 1, 0.5);
+}
+
+const ufoImg = (type, frame) => (freezeT > 0 && !(freezeT < 1 && Math.floor(clock * 10) % 2) ? SPR.ufoIce : SPR.ufo)[type][frame];
+
 function drawWorld() {
   drawShields();
 
+  for (const h of hats) drawHat(h);
   for (const c of cows) if (c.state === 'free' || c.state === 'falling') drawCow(c);
 
   for (const a of abductors) if (a.state === 'beam' || a.state === 'absorb') drawBeam(a);
@@ -2126,15 +2777,15 @@ function drawWorld() {
 
   for (const i of inv) {
     if (!i.alive) continue;
-    const img = SPR.ufo[i.type][form.frame];
+    const img = ufoImg(i.type, form.frame);
     if (i.dive) drawUfoTilted(img, i.dive.x, i.dive.y, clamp(Math.atan2(i.dive.vy, i.dive.vx) - Math.PI / 2, -0.7, 0.7));
     else drawSprite(img, invX(i), invY(i));
   }
   for (const a of abductors) {
     if (a.state === 'dive') {
-      drawUfoTilted(SPR.ufo[a.type][a.frame], a.x, a.y, Math.cos(a.u * Math.PI) * 0.4 * a.side);
+      drawUfoTilted(ufoImg(a.type, a.frame), a.x, a.y, Math.cos(a.u * Math.PI) * 0.4 * a.side);
       if (Math.floor(clock * 8) % 2) { ctx.fillStyle = PAL.y; ctx.fillRect(snap(a.x) + 5, snap(a.y) - 5, 2, 3); }
-    } else drawSprite(SPR.ufo[a.type][a.frame], a.x, a.y);
+    } else drawSprite(ufoImg(a.type, a.frame), a.x, a.y);
     if (a.flash > 0) {                       // destello al tragarse a la vaca
       ctx.fillStyle = `rgba(230,255,190,${(a.flash / 0.25 * 0.8).toFixed(3)})`;
       const r = snap(8 + (0.25 - a.flash) * 40);
@@ -2149,12 +2800,15 @@ function drawWorld() {
   }
   for (const s of splats) drawSprite(SPR.splash, s.x, s.y);
   if (mother) drawSprite(SPR.mother[mother.frame], mother.x, mother.y);
+  if (grumpy) drawGrumpy();
   for (const p of powerups) drawPowerup(p);
+  if (starT > 0) drawStar();
 
   const showPlayer = state !== 'dying' && !truckLost &&
     !(player.inv > 0 && Math.floor(clock * 12) % 2);
   if (showPlayer) {
     drawSprite(SPR.truck, player.x, player.y, player.dir < 0);
+    if (player.shield) drawIceShield();
     if (player.triple > 0 && Math.floor(clock * 6) % 2) {
       ctx.fillStyle = PAL.c;
       ctx.fillRect(snap(player.x) + (player.dir < 0 ? 12.5 : 5.5), snap(player.y) - 1.5, 2, 0.5);
@@ -2212,8 +2866,10 @@ function drawFloaters() {
 }
 
 // Botones de pausa/sonido arriba al centro
-const topBtns = () => [state === 'title' ? { id: 'lang', x: W / 2 - 19, y: 1.5, w: 17, h: 9 } : { id: 'pause', x: W / 2 - 13, y: 1.5, w: 11, h: 9 },
-  { id: 'mute', x: W / 2 + 2, y: 1.5, w: 11, h: 9 }];
+// en el inicio: idioma, modo (navideño / clásico) y sonido
+const topBtns = () => state === 'title'
+  ? [{ id: 'lang', x: W / 2 - 24, y: 1.5, w: 17, h: 9 }, { id: 'mode', x: W / 2 - 3, y: 1.5, w: 11, h: 9 }, { id: 'mute', x: W / 2 + 12, y: 1.5, w: 11, h: 9 }]
+  : [{ id: 'pause', x: W / 2 - 13, y: 1.5, w: 11, h: 9 }, { id: 'mute', x: W / 2 + 2, y: 1.5, w: 11, h: 9 }];
 function drawIconPause(cx, cy, s) {
   ctx.fillStyle = PAL.w;
   if (paused) {               // triángulo de "continuar"
@@ -2236,6 +2892,7 @@ function drawTopButtons() {
     ctx.fillRect(b.x, b.y, 0.5, b.h); ctx.fillRect(b.x + b.w - 0.5, b.y, 0.5, b.h);
     if (b.id === 'pause') drawIconPause(b.x + b.w / 2, b.y + b.h / 2, 2.5);
     else if (b.id === 'lang') drawText(lang.toUpperCase(), b.x + b.w / 2, b.y + 1, PAL.w, 1, 'center');
+    else if (b.id === 'mode') { const img = XMAS ? SPR.tree : SPR.cowIcon; drawSprite(img, b.x + b.w / 2 - img.width / RS / 2, b.y + b.h / 2 - img.height / RS / 2); }
     else drawIconSound(b.x + b.w / 2, b.y + b.h / 2);
   }
 }
@@ -2288,7 +2945,9 @@ function drawUIButton(b, primary) {
 
 // Inicio minimalista: logo, indicación para jugar, récord (si existe) y botón de instalar
 function titleLayout() {
-  const logo = COMPACT ? LOGO_S : LOGO, sub = COMPACT ? SUBLOGO_S : SUBLOGO, gap = COMPACT ? 12 : 26;
+  const logo = COMPACT ? (XMAS ? LOGO_XS : LOGO_S) : (XMAS ? LOGO_X : LOGO);
+  const sub = COMPACT ? (XMAS ? SUBLOGO_XS : SUBLOGO_S) : (XMAS ? SUBLOGO_X : SUBLOGO);
+  const gap = COMPACT ? (XMAS ? 22 : 12) : 26;   // en Navidad cabe el "¡Feliz Navidad!" entre el logo y la indicación
   const btn = canInstall() ? uiBtn(trc('install'), true) : null;
   const recStep = COMPACT ? 12 : 16, btnGap = COMPACT ? 6 : 12;
   const recH = hi > 0 ? recStep : 0;
@@ -2298,14 +2957,25 @@ function titleLayout() {
   L.logoY = COMPACT ? SHIELD_Y - 6 - blockH : Math.round((TOP + SHIELD_Y) / 2 - blockH / 2 - 6);
   L.subY = L.logoY + logo.lh + 4;
   L.promptY = L.subY + sub.lh + gap;
+  L.merryY = L.subY + sub.lh + (COMPACT ? 5 : 9);
   L.recY = L.promptY + recStep;
   if (btn) { btn.x = Math.round(W / 2 - btn.w / 2); btn.y = L.promptY + 7 + recH + btnGap; L.btn = btn; }
   return L;
 }
 function drawTitle() {
-  const L = titleLayout();
-  blitLogo(L.logo, Math.round((W - L.logo.lw) / 2), L.logoY);
+  const L = titleLayout(), lx = Math.round((W - L.logo.lw) / 2);
+  blitLogo(L.logo, lx, L.logoY);
   blitLogo(L.sub, Math.round((W - L.sub.lw) / 2), L.subY);
+  if (XMAS) {
+    // gorrito sobre la V y saludo que alterna rojo y verde
+    const k = L.logo.sc / 2, ax = lx + L.logo.th + L.logo.sc / 2, ay = L.logoY + L.logo.th;
+    ctx.save();
+    ctx.translate(ax, ay);
+    ctx.rotate(-0.2);
+    ctx.drawImage(SPR.hat, -5.5 * k, -5.5 * k, 11 * k, 7 * k);
+    ctx.restore();
+    drawTextShadow(tr('merry'), W / 2, L.merryY, Math.floor(clock * 1.2) % 2 ? '#5bea6b' : '#ff6b5e', 1, 'center');
+  }
   if (!invite && !helpOpen && !langOpen) {
     ctx.globalAlpha = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(clock * 3.2));   // respira en vez de parpadear
     drawTextShadow(touchMode ? tr('tapPlay') : tr('pressEnter'), W / 2, L.promptY, PAL.w, 1, 'center');
@@ -2418,7 +3088,9 @@ function drawGameOver() {
 }
 
 function drawLevelClear() {
-  drawPanelItems([[trc('cleared'), titleS(), PAL.y], [trc('bonus', waveBonus), 1, PAL.c]]);
+  const items = [[trc('cleared'), titleS(), PAL.y], [trc('bonus', waveBonus), 1, PAL.c]];
+  if (stockBonus) items.push([trc('stocking', stockBonus), 1, '#ff8f86']);
+  drawPanelItems(items);
 }
 
 // Avisos de la partida (oleada nueva, sin defensa)
@@ -2507,11 +3179,17 @@ function render() {
   ctx.drawImage(bgSky, 0, 0, VW, H);
   drawStars();
   drawClouds();
+  if (XMAS) drawSnow(false);
   ctx.save();
   if (shake > 0) ctx.translate(snap((Math.random() * 2 - 1) * shake), snap((Math.random() * 2 - 1) * shake));
   ctx.drawImage(bgFront, 0, 0, VW, H);
   drawWindmill();
+  if (XMAS) {
+    drawLights();
+    if (state !== 'title') drawStockings();
+  }
   ctx.translate(OX, 0);
+  if (santa) drawSanta();
   if (state === 'title') {
     drawShields();
     for (const c of cows) drawCow(c);
@@ -2521,6 +3199,7 @@ function render() {
   }
   drawParticles();
   ctx.restore();
+  if (XMAS) drawSnow(true);
 
   ctx.save();
   ctx.translate(OX, 0);
@@ -2558,6 +3237,7 @@ addEventListener('keydown', e => {
     return;
   }
   if (e.code === 'KeyL' && state === 'title' && !invite) { openLang(); return; }
+  if (e.code === 'KeyN' && state === 'title' && !invite) { setXmas(!XMAS); return; }
   if (invite) {
     if (e.code === 'Enter') doInstall();
     else if (e.code === 'Escape') laterInstall();
@@ -2574,6 +3254,19 @@ document.addEventListener('visibilitychange', () => {
 });
 
 function toggleMute() { AudioSys.setMuted(!AudioSys.muted); }
+
+// Cambia entre el modo navideño y el clásico (solo desde el inicio) y lo recuerda
+function setXmas(on) {
+  XMAS = on;
+  store.set('vaquitasXmas', on ? '1' : '0');
+  applyTheme();
+  buildScene();
+  shields = makeShields();
+  santa = null; santaT = rand(1.5, 3); grumpy = null; hats = [];
+  for (const c of cows) c.hat = true;
+  floater(trc(on ? 'modeXmas' : 'modeClassic'), W / 2, TOP + 22, on ? '#ff8f86' : PAL.c, 1.4);
+  if (on) SFX.jingle(0.04); else SFX.start();
+}
 
 const inside = (b, x, y, m = 0) => x >= b.x - m && x < b.x + b.w + m && y >= b.y - m && y < b.y + b.h + m;
 function zoneAt(vx, vy) {
@@ -2622,6 +3315,7 @@ cvs.addEventListener('pointerdown', e => {
   if (z === 'pause') togglePause();
   else if (z === 'mute') toggleMute();
   else if (z === 'lang') openLang();
+  else if (z === 'mode') setXmas(!XMAS);
   else if (z === 'langclose') langOpen = false;
   else if (z && z.startsWith('pick:')) pickLang(z.slice(5));
   else if (z === 'later') laterInstall();
@@ -2757,7 +3451,15 @@ window.__vaquitas = {
     let pk = 0, sq = 0; for (const v of x) { pk = Math.max(pk, Math.abs(v)); sq += v * v; }
     return { peak: +pk.toFixed(3), rms: +Math.sqrt(sq / x.length).toFixed(4) };
   },
-  leave: n => { let k = 0; for (const i of inv) if (i.alive && ++k > n) i.alive = false; }
+  leave: n => { let k = 0; for (const i of inv) if (i.alive && ++k > n) i.alive = false; },
+  get xmas() { return XMAS; }, setXmas: on => setXmas(on),
+  spawnSanta: () => { santaT = 0; }, get santa() { return santa && { x: santa.x, dir: santa.dir, dropped: santa.dropped }; },
+  dropGift: (k, x = player.x + 7) => { powerups.push(newGift(x, 40, k)); }, applyGift: k => applyGift(k),
+  forceGrumpy: () => { const p = powerups.find(q => q.gift && q.state === 'ground'); if (p) maybeGrumpy(p, true); return !!grumpy; },
+  get grumpy() { return grumpy && { state: grumpy.state, x: Math.round(grumpy.x), y: Math.round(grumpy.y) }; },
+  shootGrumpy: () => { if (grumpy) killGrumpy(); },
+  get xm() { return { freezeT, starT, shield: player.shield, stockings, stockBonus, waveLost, hats: hats.length,
+                      cowHats: cows.filter(c => c.hat).length, lights: xlights.length, flakes: flakes.length, gaps: fenceGaps.length }; }
 };
 
 // Instalable / offline (PWA). Requiere https o localhost.
