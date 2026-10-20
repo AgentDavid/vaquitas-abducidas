@@ -1,6 +1,6 @@
 // Service worker: deja el juego jugable sin conexión.
 // Sube VERSION cada vez que publiques cambios para que los jugadores reciban la versión nueva.
-const VERSION = 'vaquitas-v11';
+const VERSION = 'vaquitas-v12';
 const CORE = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -20,6 +20,9 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
   // Página: primero red (para recibir actualizaciones), si no hay conexión, la copia guardada
   if (req.mode === 'navigate') {
+    // Otras páginas (privacidad.html) no deben pisar la copia del juego
+    const path = new URL(req.url).pathname;
+    if (!path.endsWith('/') && !path.endsWith('/index.html')) return;
     e.respondWith(
       fetch(req).then(r => { caches.open(VERSION).then(c => c.put('index.html', r.clone())); return r; })
         .catch(() => caches.match('index.html'))

@@ -23,4 +23,6 @@ y abre http://localhost:8765
 - `index.html`: todo el juego (canvas + JavaScript, sin dependencias).
 - `sw.js`: service worker para jugar sin conexión. Sube `VERSION` en cada publicación.
 - `manifest.webmanifest` e `icons/`: datos para instalar como app.
+- `privacidad.html`: política de privacidad (la pide Google Play).
+- `.well-known/assetlinks.json`: vincula el sitio con la app de Android (TWA). Lleva el package ID y las huellas SHA-256 de la firma.
 - `Dockerfile` y `Caddyfile`: servidor estático para el despliegue en Railway.
