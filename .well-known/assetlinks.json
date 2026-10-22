@@ -3,7 +3,7 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "REEMPLAZAR_CON_PACKAGE_ID",
+      "package_name": "vaquitas.agentdavid.dev",
       "sha256_cert_fingerprints": [
         "REEMPLAZAR_CON_HUELLA_SHA256_DE_PWABUILDER",
         "REEMPLAZAR_CON_HUELLA_SHA256_DE_PLAY_APP_SIGNING"
