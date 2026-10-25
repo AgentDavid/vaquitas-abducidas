@@ -8,21 +8,22 @@
 <meta name="description" content="Política de privacidad de Vaquitas Abducidas.">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <style>
-  /* Letra pixel: títulos con la fuente del juego (tools/pixel-font.py) y el texto largo con VT323 (licencia OFL) */
+  /* Todo con la letra pixel del juego (tools/pixel-font.py): mayúsculas y sin acentos, como en el canvas.
+     Mide 8 pixeles por em, así que a 16 px cada pixel ocupa 2. */
   @font-face { font-family: "Vaquitas Pixel"; src: url(fonts/vaquitas-pixel.woff2) format("woff2"); font-display: swap; }
-  @font-face { font-family: "VT323"; src: url(fonts/vt323.woff2) format("woff2"); font-display: swap; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     background: #040818;
     color: #dfe6ff;
-    font: 22px/1.3 "VT323", ui-monospace, monospace;
+    font: 16px/1.6 "Vaquitas Pixel", ui-monospace, monospace;
+    text-transform: uppercase;
     -webkit-font-smoothing: none;
     padding: 32px 16px 48px;
   }
   main { max-width: 680px; margin: 0 auto; }
   header { display: flex; align-items: center; gap: 14px; margin-bottom: 28px; }
   header img { width: 56px; height: 56px; image-rendering: pixelated; }
-  h1, h2, .volver { font-family: "Vaquitas Pixel", "VT323", ui-monospace, monospace; font-weight: 400; text-transform: uppercase; }
+  h1, h2 { font-weight: 400; }
   h1 { font-size: 24px; color: #fff; line-height: 1.25; text-shadow: 2px 2px 0 #1f5fd1; }
   h2 { font-size: 16px; color: #ffd84a; line-height: 1.25; margin: 32px 0 10px; text-shadow: 2px 2px 0 #050a1f; }
   strong { color: #fff; font-weight: 400; }

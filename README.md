@@ -30,8 +30,9 @@ y abre http://localhost:8765
 - `fonts/`: letra pixel para los textos HTML (panel de premios, registro, privacidad).
   `vaquitas-pixel.woff2` es la misma fuente 5x7 del canvas; se genera desde `FONT_SRC` con
   `python tools/pixel-font.py` (requiere `pip install fonttools brotli`); vuelve a correrlo si
-  cambias la fuente. `vt323.woff2` (licencia OFL) es para lo que escribe el jugador y el texto
-  largo del aviso de privacidad, porque tiene minúsculas y acentos.
+  cambias la fuente (ojo: en la fuente web `@` es una arroba, no el corazón del juego).
+  `vt323.woff2` (licencia OFL) es solo para lo que escribe el jugador en el registro, porque
+  tiene minúsculas y acentos.
 
 ## Programa de premios Elektra (CRM)
 

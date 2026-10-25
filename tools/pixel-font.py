@@ -20,12 +20,14 @@ html = (ROOT / "index.html").read_text(encoding="utf-8")
 section = html[html.index("const FONT_SRC = {"):html.index("const FONT = {};")]
 
 ROW = r"[01]{5}"
-glyphs = {ch: bits for ch, bits in re.findall(rf"'(.)': '({ROW}(?: {ROW}){{6}})'", section)}
+glyphs = {ch: bits for ch, bits in re.findall(rf"""['"](.)['"]: '({ROW}(?: {ROW}){{6}})'""", section)}
 # Cirílico que reutiliza el dibujo de la letra latina igual (АA, ВB, …)
 for cy, la in re.findall(r"'(.)(.)'", section[section.index("for (const [cy, la] of"):]):
     glyphs[cy] = glyphs[la]
-# Signos que el juego no usa en el canvas pero sí aparecen en los textos HTML
+# Signos que el juego no usa en el canvas pero sí aparecen en los textos HTML. En el juego '@' dibuja un
+# corazón (ícono); aquí tiene que ser una arroba de verdad para los correos.
 glyphs.update({
+    "@": "01110 10001 10111 10101 10111 10000 01111",
     '"': "01010 01010 00000 00000 00000 00000 00000",
     "_": "00000 00000 00000 00000 00000 00000 11111",
     "…": "00000 00000 00000 00000 00000 00000 10101",
