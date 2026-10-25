@@ -1,8 +1,8 @@
 // Service worker: deja el juego jugable sin conexión.
 // Sube VERSION cada vez que publiques cambios para que los jugadores reciban la versión nueva.
-const VERSION = 'vaquitas-v13';
+const VERSION = 'vaquitas-v14';
 const CORE = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png',
-  'crm.js', 'vendor/crm-games.js', 'crm-config.js'];
+  'crm.js', 'vendor/crm-games.js', 'crm-config'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
@@ -22,10 +22,11 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url);
   // La API del CRM y los videos de Elektra (otro dominio) siempre van a la red, sin caché
   if (url.origin !== location.origin && url.hostname !== 'fonts.googleapis.com' && url.hostname !== 'fonts.gstatic.com') return;
-  // Código y config del programa de premios: primero red, para que una llave o versión nueva llegue al instante
-  if (url.pathname.endsWith('/crm.js') || url.pathname.endsWith('/crm-config.js')) {
+  // Código y config del programa de premios: primero red (revalidando la caché HTTP, que Cloudflare
+  // alarga a 4 h), para que una llave o versión nueva llegue al instante
+  if (url.pathname.endsWith('/crm.js') || url.pathname.endsWith('/crm-config')) {
     e.respondWith(
-      fetch(req).then(r => { if (r.ok) { const copy = r.clone(); caches.open(VERSION).then(c => c.put(req, copy)); } return r; })
+      fetch(req, { cache: 'no-cache' }).then(r => { if (r.ok) { const copy = r.clone(); caches.open(VERSION).then(c => c.put(req, copy)); } return r; })
         .catch(() => caches.match(req))
     );
     return;

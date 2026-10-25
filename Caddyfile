@@ -7,13 +7,15 @@
 	encode zstd gzip
 
 	# La página y el service worker siempre se revalidan para que las actualizaciones lleguen rápido
-	@fresh path / /index.html /sw.js /manifest.webmanifest /crm.js /crm-config.js
+	@fresh path / /index.html /sw.js /manifest.webmanifest /crm.js /crm-config
 	header @fresh Cache-Control "no-cache"
 
 	# Programa de premios Elektra: la config del CRM sale de las variables del servicio
 	# (CRM_API_URL y CRM_GAME_KEY en Railway). Rotar la llave = cambiar la variable y redesplegar.
-	@crmconfig path /crm-config.js
-	templates @crmconfig {
+	# Se sirve sin extensión porque Cloudflare cachea los .js en el edge y la llave nueva no llegaría.
+	@crmconfig path /crm-config
+	rewrite @crmconfig /crm-config.js
+	templates /crm-config.js {
 		mime text/javascript application/javascript
 	}
 

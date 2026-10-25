@@ -42,8 +42,8 @@ El juego se conecta al CRM de videojuegos (repo `crm_videogames`, contrato en
 - **Se registra**: formulario con aviso de privacidad (`privacidad.html`, versión
   `2026-10`) y opt-in de promociones.
 
-La configuración viene de dos variables del servicio en Railway, que Caddy escribe en
-`crm-config.js` al servirlo:
+La configuración viene de dos variables del servicio en Railway, que Caddy escribe en la
+plantilla `crm-config.js` y sirve en `/crm-config` (sin extensión, para que Cloudflare no la cachee):
 
 ```
 CRM_API_URL=https://${{backend.RAILWAY_PUBLIC_DOMAIN}}
