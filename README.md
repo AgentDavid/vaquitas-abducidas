@@ -26,3 +26,33 @@ y abre http://localhost:8765
 - `privacidad.html`: política de privacidad (la pide Google Play).
 - `.well-known/assetlinks.json`: vincula el sitio con la app de Android (TWA). Lleva el package ID y las huellas SHA-256 de la firma.
 - `Dockerfile` y `Caddyfile`: servidor estático para el despliegue en Railway.
+- `crm.js`, `crm-config.js` y `vendor/crm-games.js`: programa de premios de Elektra (ver abajo).
+
+## Programa de premios Elektra (CRM)
+
+El juego se conecta al CRM de videojuegos (repo `crm_videogames`, contrato en
+`docs/integraciones/game-api-v1.md`):
+
+- **Entra al juego**: al abrir se crea una sesión con el `?src=` del QR, la campaña o la TV.
+- **Ve un insert**: al perder el último camión se ofrece seguir con una vida extra; si no
+  hay, se ofrece un video de Elektra. El botón **PREMIOS** (inicio y fin del juego, o la
+  tecla R) muestra el saldo y permite ver videos y registrarse.
+- **Gana recompensa**: el CRM decide si el video paga (visto completo, tope diario) y si
+  da puntos o vidas extra. Las vidas extra que se gastan se cuentan en el dispositivo.
+- **Se registra**: formulario con aviso de privacidad (`privacidad.html`, versión
+  `2026-10`) y opt-in de promociones.
+
+La configuración viene de dos variables del servicio en Railway, que Caddy escribe en
+`crm-config.js` al servirlo:
+
+```
+CRM_API_URL=https://${{backend.RAILWAY_PUBLIC_DOMAIN}}
+CRM_GAME_KEY=gk_vaquitas_…   # panel del CRM → Juegos → Rotar llave
+```
+
+Sin ellas (o sin internet) todo lo del programa se oculta y el juego funciona igual. En
+local, sin Caddy, se puede probar con
+`localStorage.vaquitasCrmConfig = '{"apiUrl":"…","gameKey":"gk_…"}'`.
+
+`vendor/crm-games.js` es el build IIFE de `packages/game-sdk`; si cambia el SDK, cópialo de
+nuevo desde `packages/game-sdk/dist/crm-games.global.js`.

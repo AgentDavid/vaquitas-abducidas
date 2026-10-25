@@ -40,6 +40,10 @@
 <body>
 <div id="wrap"><canvas id="c" aria-label="Vaquitas Abducidas"></canvas></div>
 
+<!-- Programa de premios Elektra (CRM): config inyectada por Caddy, SDK e interfaz. Opcional: sin ellos el juego sigue igual. -->
+<script src="crm-config.js"></script>
+<script src="vendor/crm-games.js"></script>
+<script src="crm.js"></script>
 <script>
 (() => {
 'use strict';
@@ -328,6 +332,15 @@ const SPR = {
     '.......',
     'wwwwwww',
     'wwwwwww']),
+  star: makeSprite([
+    '...y...',
+    '...y...',
+    '..yyy..',
+    'yyyyyyy',
+    '.yyyyy.',
+    '..yyy..',
+    '.yy.yy.',
+    '.y...y.']),
   sndOff: makeSprite([
     '......w.......',
     '.....ww.......',
@@ -528,7 +541,12 @@ const TX = {
     cowsSafe: 'VAQUITAS A SALVO: {0}', newRec: '¡NUEVO RECORD!', newRecWave: '¡NUEVO RECORD! OLEADA {0}',
     tapCont: 'TOCA PARA CONTINUAR', tapContC: 'TOCA PARA SEGUIR', enterCont: 'ENTER PARA CONTINUAR',
     cleared: '¡OLEADA SUPERADA!', clearedC: '¡SUPERADA!', bonus: 'BONO LECHERO +{0}', bonusC: 'BONO +{0}',
-    fire: 'FUEGO', pause: 'PAUSA', tapScreen: 'TOCA LA PANTALLA', pCont: 'P PARA CONTINUAR', language: 'IDIOMA'
+    fire: 'FUEGO', pause: 'PAUSA', tapScreen: 'TOCA LA PANTALLA', pCont: 'P PARA CONTINUAR', language: 'IDIOMA',
+    // programa de premios Elektra
+    rewards: 'PREMIOS', crmPts: 'PUNTOS ELEKTRA {0}', crmPtsC: '{0} PUNTOS', crmLives: 'VIDAS EXTRA {0}', crmLivesC: '{0} VIDAS',
+    noTrucks: '¡SIN CAMIONES!', haveLife: 'TIENES 1 VIDA EXTRA', haveLives: 'TIENES {0} VIDAS EXTRA', useLife: 'USAR VIDA',
+    watchBody: 'MIRA UN VIDEO DE ELEKTRA Y GANA UN PREMIO', watch: 'VER VIDEO', noThanks: 'NO, GRACIAS',
+    plusLife: '+1 VIDA', plusPts: '+{0} PUNTOS ELEKTRA', register: 'REGISTRARME', saveScore: 'REGISTRATE Y GUARDA TUS PUNTOS'
   },
   en: {
     wave: 'WAVE {0}', sub1: 'PROTECT THE MILK!', sub1C: 'GUARD THE MILK!', sub2: 'DIVE ATTACKS!',
@@ -545,7 +563,11 @@ const TX = {
     cowsSafe: 'COWS SAFE: {0}', newRec: 'NEW RECORD!', newRecWave: 'NEW RECORD! WAVE {0}',
     tapCont: 'TAP TO CONTINUE', enterCont: 'ENTER TO CONTINUE',
     cleared: 'WAVE CLEARED!', clearedC: 'CLEARED!', bonus: 'MILK BONUS +{0}', bonusC: 'BONUS +{0}',
-    fire: 'FIRE', pause: 'PAUSED', tapScreen: 'TAP THE SCREEN', pCont: 'P TO CONTINUE', language: 'LANGUAGE'
+    fire: 'FIRE', pause: 'PAUSED', tapScreen: 'TAP THE SCREEN', pCont: 'P TO CONTINUE', language: 'LANGUAGE',
+    rewards: 'REWARDS', crmPts: 'ELEKTRA POINTS {0}', crmPtsC: '{0} POINTS', crmLives: 'EXTRA LIVES {0}', crmLivesC: '{0} LIVES',
+    noTrucks: 'NO TRUCKS LEFT!', haveLife: 'YOU HAVE 1 EXTRA LIFE', haveLives: 'YOU HAVE {0} EXTRA LIVES', useLife: 'USE LIFE',
+    watchBody: 'WATCH AN ELEKTRA VIDEO AND WIN A PRIZE', watch: 'WATCH VIDEO', noThanks: 'NO, THANKS',
+    plusLife: '+1 LIFE', plusPts: '+{0} ELEKTRA POINTS', register: 'SIGN UP', saveScore: 'SIGN UP AND KEEP YOUR POINTS'
   },
   zh: {
     wave: '第 {0} 波', sub1: '保护牛奶！', sub2: '俯冲攻击！', sub3: '舰队躁动！', subN: '更快了！', plusCow: '+1 奶牛',
@@ -1505,7 +1527,7 @@ function musicFor() {
     case 'playing': case 'dying':
       // suspenso solo mientras una nave se está llevando una vaca
       return abductors.some(a => a.state === 'beam' || a.state === 'absorb' || a.state === 'leave') ? 'suspense' : XMAS ? 'xmas' : 'main';
-    case 'raid': return 'suspense';
+    case 'raid': case 'continue': return 'suspense';
     case 'levelclear': return 'victory';
     default: return null;
   }
@@ -1559,6 +1581,10 @@ let santa = null, santaT = rand(2, 4), grumpy = null, hats = [];
 let stockings = 0, stockAt = -9, stockBonus = 0, waveLost = false;
 let freezeT = 0, starT = 0, fgt = 0;   // fgt: reloj de la flota (se detiene mientras está congelada)
 let form = { x: 48, y: 34, dir: 1, t: 0, frame: 0, note: 0 };
+// Programa de premios Elektra (crm.js). Sin conexión con el CRM no aparece nada de esto.
+const CRM = window.VaquitasCRM || null;
+const crmOn = () => !!(CRM && CRM.online);
+let continued = false;        // una sola continuación por partida
 
 // Posición de casilla en la formación + movimiento propio de cada tipo de nave
 const slotX = i => form.x + i.c * COLG + 2;
@@ -1678,6 +1704,7 @@ const groundFx = () => XMAS ? ['#dfe9ff', '#a9bde0'] : ['#4cc35a', PAL.l];   // 
 function newGame() {
   score = 0; level = 1; lives = 3;
   hi = loadHi(); hiBefore = hi; newRecord = false;
+  continued = false;
   truckLost = false;
   cows = makeCows();
   particles = []; floaters = [];
@@ -1783,6 +1810,39 @@ function startRaid() {
   if (cowsLeft() === 0 || abductors.length === 0) gameOver('lostAll');
 }
 
+// Al perder el último camión: seguir con una vida extra del programa de premios, o ganar una con un video
+function offerContinue() {
+  if (continued || !crmOn() || (!CRM.extraLives && !CRM.videos)) return false;
+  state = 'continue';
+  banner = null; shots = []; eshots = [];
+  return true;
+}
+function revive() {
+  continued = true;
+  lives = 1;
+  player.x = W / 2 - TRUCK_W / 2; player.inv = 2.5;
+  eshots = [];
+  state = 'playing';
+  floater(tr('plusLife'), W / 2, PLAYER_Y - 12, PAL.n, 1.8);
+  SFX.power();
+}
+function acceptContinue() {
+  if (state !== 'continue' || CRM.busy) return;
+  if (CRM.useLife()) { revive(); return; }
+  CRM.watchVideo().then(r => {
+    if (state !== 'continue') return;
+    if (r.rewarded && r.reward.type === 'POINTS') floater(tr('plusPts', r.reward.amount), W / 2, CY - 30, PAL.y, 2.4);
+    if (CRM.useLife()) revive();
+    // sin vida que usar siguen las abducciones; si cerró el video o falló, puede volver a intentarlo
+    else if (r.rewarded || r.reason || r.unavailable) declineContinue();
+  });
+}
+function declineContinue() {
+  if (state !== 'continue' || CRM.busy) return;
+  continued = true;
+  startRaid();
+}
+
 function requestStart() {
   if (invite || helpOpen || langOpen) return;
   if (state === 'title') newGame();
@@ -1823,7 +1883,7 @@ function update(dt) {
       stateTimer -= dt;
       updateCows(dt);
       if (stateTimer <= 0) {
-        if (lives <= 0) startRaid();
+        if (lives <= 0) { if (!offerContinue()) startRaid(); }
         else { player.x = W / 2 - TRUCK_W / 2; player.inv = 2; eshots = []; state = 'playing'; }
       }
       break;
@@ -1844,6 +1904,9 @@ function update(dt) {
       break;
     case 'gameover':
       stateTimer += dt;
+      updateCows(dt);
+      break;
+    case 'continue':
       updateCows(dt);
       break;
   }
@@ -2804,7 +2867,7 @@ function drawWorld() {
   for (const p of powerups) drawPowerup(p);
   if (starT > 0) drawStar();
 
-  const showPlayer = state !== 'dying' && !truckLost &&
+  const showPlayer = state !== 'dying' && state !== 'continue' && !truckLost &&
     !(player.inv > 0 && Math.floor(clock * 12) % 2);
   if (showPlayer) {
     drawSprite(SPR.truck, player.x, player.y, player.dir < 0);
@@ -2929,7 +2992,7 @@ function drawHUD() {
   }
 }
 
-// Botón de interfaz en el canvas (con ícono opcional)
+// Botón de interfaz en el canvas (ícono opcional: true = descargar, o un sprite)
 function uiBtn(label, icon = false) { return { label, icon, x: 0, y: 0, w: textWidth(label) + 12 + (icon ? 7 : 0), h: 13 }; }
 function drawUIButton(b, primary) {
   const face = primary ? '#d03a33' : '#16307a', edge = primary ? '#6e1514' : '#06123a';
@@ -2939,7 +3002,7 @@ function drawUIButton(b, primary) {
   ctx.fillStyle = primary ? '#ff8f86' : '#4b84ef';
   ctx.fillRect(b.x + 1.5, b.y + 1, b.w - 3, 0.5);
   let tx = b.x + 6;
-  if (b.icon) { drawSprite(SPR.download, tx, b.y + 4); tx += 7; }
+  if (b.icon) { drawSprite(b.icon === true ? SPR.download : b.icon, tx, b.y + 4); tx += 7; }
   drawTextShadow(b.label, tx, b.y + 3, PAL.w, 1, 'left', edge);
 }
 
@@ -2949,17 +3012,26 @@ function titleLayout() {
   const sub = COMPACT ? (XMAS ? SUBLOGO_XS : SUBLOGO_S) : (XMAS ? SUBLOGO_X : SUBLOGO);
   const gap = COMPACT ? (XMAS ? 22 : 12) : 26;   // en Navidad cabe el "¡Feliz Navidad!" entre el logo y la indicación
   const btn = canInstall() ? uiBtn(trc('install'), true) : null;
+  const rbtn = crmOn() ? uiBtn(tr('rewards'), SPR.star) : null;
+  const btns = [btn, rbtn].filter(Boolean);
   const recStep = COMPACT ? 12 : 16, btnGap = COMPACT ? 6 : 12;
-  const recH = hi > 0 ? recStep : 0;
-  const blockH = logo.lh + 4 + sub.lh + gap + 7 + recH + (btn ? btnGap + 13 : 0);
-  const L = { logo, sub };
+  const recH = hi > 0 ? recStep : 0, balH = rbtn && !COMPACT ? recStep : 0;   // en celular el saldo se ve en el panel de premios
+  const stack = btns.length === 2 && btn.w + rbtn.w + 6 > W - 8;
+  const blockH = logo.lh + 4 + sub.lh + gap + 7 + recH + balH + (btns.length ? btnGap + 13 + (stack ? 17 : 0) : 0);
+  const L = { logo, sub, btn, rbtn };
   // en celular el bloque se apoya sobre las pacas para dejar libre la luna
   L.logoY = COMPACT ? SHIELD_Y - 6 - blockH : Math.round((TOP + SHIELD_Y) / 2 - blockH / 2 - 6);
   L.subY = L.logoY + logo.lh + 4;
   L.promptY = L.subY + sub.lh + gap;
   L.merryY = L.subY + sub.lh + (COMPACT ? 5 : 9);
   L.recY = L.promptY + recStep;
-  if (btn) { btn.x = Math.round(W / 2 - btn.w / 2); btn.y = L.promptY + 7 + recH + btnGap; L.btn = btn; }
+  L.balY = L.promptY + recH + recStep;
+  const by = L.promptY + 7 + recH + balH + btnGap;
+  if (stack) btns.forEach((b, k) => { b.x = Math.round(W / 2 - b.w / 2); b.y = by + k * 17; });
+  else {
+    let x = Math.round(W / 2 - (btns.reduce((a, b) => a + b.w, 0) + 6 * (btns.length - 1)) / 2);
+    for (const b of btns) { b.x = x; b.y = by; x += b.w + 6; }
+  }
   return L;
 }
 function drawTitle() {
@@ -2982,28 +3054,39 @@ function drawTitle() {
     ctx.globalAlpha = 1;
   }
   if (hi > 0) drawText(tr('record') + ' ' + pad(hi), W / 2, L.recY, '#4f6299', 1, 'center');
+  if (L.rbtn && !COMPACT) drawText(crmBalance(), W / 2, L.balY, PAL.y, 1, 'center');
   if (L.btn) drawUIButton(L.btn, false);
+  if (L.rbtn) drawUIButton(L.rbtn, true);
+}
+// Saldo del programa de premios; en pantallas angostas, la versión corta
+function crmBalance() {
+  const n = CRM.extraLives, full = tr('crmPts', CRM.points) + (n ? ' · ' + tr('crmLives', n) : '');
+  return textWidth(full) <= W - 8 ? full : tr('crmPtsC', CRM.points) + (n ? ' · ' + tr('crmLivesC', n) : '');
 }
 
-// Invitación a instalar (celular, después de jugar una partida)
-function inviteLayout() {
+// Aviso con dos botones: invitación a instalar (celular, después de jugar) y continuar con vida extra
+function choiceLayout(headText, bodyText, bI, bL, headCol = PAL.y) {
   const maxW = W - panelM() * 2 - 10;
-  const hs = titleS(), head = wrapText(tr('liked'), hs, maxW);
-  const body = wrapText(tr('installBody'), 1, maxW);
-  const bI = uiBtn(tr('installBtn'), true), bL = uiBtn(tr('notNow'));
+  const hs = titleS(), head = wrapText(headText, hs, maxW);
+  const body = wrapText(bodyText, 1, maxW);
   const stack = bI.w + bL.w + 6 > maxW;
   const textH = head.length * lineH(hs) + 4 + body.length * lineH(1);
   const total = textH + 8 + (stack ? 30 : 13);
   const y0 = Math.round(CY - total / 2), by = y0 + textH + 8;
   if (stack) { bI.x = Math.round(W / 2 - bI.w / 2); bI.y = by; bL.x = Math.round(W / 2 - bL.w / 2); bL.y = by + 17; }
   else { const tw = bI.w + bL.w + 6; bI.x = Math.round(W / 2 - tw / 2); bL.x = bI.x + bI.w + 6; bI.y = bL.y = by; }
-  return { y0, total, hs, head, body, bI, bL };
+  return { y0, total, hs, head, body, bI, bL, headCol };
 }
-function drawInvite() {
-  const L = inviteLayout();
+const inviteLayout = () => choiceLayout(tr('liked'), tr('installBody'), uiBtn(tr('installBtn'), true), uiBtn(tr('notNow')));
+function continueLayout() {
+  const n = CRM.extraLives;
+  return choiceLayout(tr('noTrucks'), n ? (n === 1 ? tr('haveLife') : tr('haveLives', n)) : tr('watchBody'),
+    uiBtn(n ? tr('useLife') : tr('watch'), SPR.star), uiBtn(tr('noThanks')), PAL.r);
+}
+function drawChoice(L) {
   drawPanel(L.y0 - 9, L.y0 + L.total + 9);
   let y = L.y0;
-  for (const l of L.head) { drawTextShadow(l, W / 2, y, PAL.y, L.hs, 'center'); y += lineH(L.hs); }
+  for (const l of L.head) { drawTextShadow(l, W / 2, y, L.headCol, L.hs, 'center'); y += lineH(L.hs); }
   y += 4;
   for (const l of L.body) { drawTextShadow(l, W / 2, y, PAL.w, 1, 'center'); y += lineH(1); }
   drawUIButton(L.bI, true);
@@ -3053,10 +3136,14 @@ function drawPanel(y0, y1) {
   ctx.fillRect(m + 1, y0 + 1, W - m * 2 - 2, 0.5);
 }
 // Panel centrado que se ajusta a su contenido; cada renglón: [texto, escala, color, visible]
-function drawPanelItems(items) {
+function panelLayout(items) {
   const maxW = W - panelM() * 2 - 8;
   const laid = items.map(([t, sc, col, show = true]) => ({ lines: wrapText(t, sc, maxW), sc, col, show }));
   const total = laid.reduce((a, it) => a + it.lines.length * lineH(it.sc) + 4, 0) - 4;
+  return { laid, total, y: Math.round(CY - total / 2) };
+}
+function drawPanelItems(items) {
+  const { laid, total } = panelLayout(items);
   let y = Math.round(CY - total / 2);
   drawPanel(y - 9, y + total + 7);
   for (const it of laid) {
@@ -3065,26 +3152,40 @@ function drawPanelItems(items) {
   }
 }
 
-function drawGameOver() {
+function gameOverItems() {
   const blinkRec = Math.floor(clock * 4) % 2 === 1, blinkGo = stateTimer > 1 && Math.floor(clock * 2.2) % 2 === 0;
+  const save = crmOn() && !CRM.registered && CRM.points > 0;   // invita a registrarse para no perder los puntos
   if (COMPACT) {
-    // tarjeta de resultados: oscurece todo y deja solo lo esencial, con los puntos en grande
-    ctx.fillStyle = 'rgba(4,8,24,0.6)';
-    ctx.fillRect(-OX, 0, VW, H);
+    // tarjeta de resultados: solo lo esencial, con los puntos en grande
     const items = [[tr('gameOver'), titleS(), PAL.r]];
     if (gameOverReason) items.push([trc(gameOverReason), 1, PAL.y]);
     items.push([tr('score'), 1, '#7fb2ff'], [pad(score), 1.5, PAL.w], [tr('wave', level), 1, '#9fe39f']);
     if (newRecord) items.push([tr('newRec'), 1, PAL.c, blinkRec]);
+    if (save) items.push([tr('saveScore'), 1, '#ff8f86']);
     items.push([trc('tapCont'), 1, PAL.y, blinkGo]);
-    drawPanelItems(items);
-    return;
+    return items;
   }
   const items = [[tr('gameOver'), 2, PAL.r]];
   if (gameOverReason) items.push([tr(gameOverReason), 1, PAL.y]);
   items.push([tr('score') + ' ' + pad(score), 1, PAL.w], [tr('cowsSafe', cowsLeft()), 1, '#9fe39f']);
   if (newRecord) items.push([tr('newRecWave', level), 1, PAL.c, blinkRec]);
+  if (save) items.push([tr('saveScore'), 1, '#ff8f86']);
   items.push([touchMode ? tr('tapCont') : tr('enterCont'), 1, PAL.y, blinkGo]);
-  drawPanelItems(items);
+  return items;
+}
+// Botón del programa de premios bajo la tarjeta de resultados
+function gameOverBtn() {
+  if (!crmOn()) return null;
+  const { y, total } = panelLayout(gameOverItems());
+  const b = uiBtn(CRM.registered ? tr('rewards') : tr('register'), SPR.star);
+  b.x = Math.round(W / 2 - b.w / 2); b.y = y + total + 13;
+  return b;
+}
+function drawGameOver() {
+  if (COMPACT) { ctx.fillStyle = 'rgba(4,8,24,0.6)'; ctx.fillRect(-OX, 0, VW, H); }   // oscurece todo
+  drawPanelItems(gameOverItems());
+  const b = gameOverBtn();
+  if (b) drawUIButton(b, true);
 }
 
 function drawLevelClear() {
@@ -3210,8 +3311,9 @@ function render() {
   if (banner && !paused && (state === 'playing' || state === 'raid')) drawBanner();
   if (state === 'levelclear') drawLevelClear();
   if (state === 'gameover') drawGameOver();
+  if (state === 'continue') drawChoice(continueLayout());
   if (paused) drawPanelItems([[tr('pause'), titleS(), PAL.w], [touchMode ? tr('tapScreen') : tr('pCont'), 1, '#9ccaff']]);
-  if (invite) drawInvite();
+  if (invite) drawChoice(inviteLayout());
   if (helpOpen) drawInstallHelp();
   ctx.restore();
   if (DECK_H) drawDeck();
@@ -3225,6 +3327,7 @@ const tk = { left: false, right: false, fire: false };   // táctil
 const KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', Space: 'fire', ArrowUp: 'fire', KeyW: 'fire' };
 
 addEventListener('keydown', e => {
+  if (CRM && CRM.busy) return;     // el overlay de premios (video, registro) tiene el teclado
   AudioSys.init();
   const k = KEYMAP[e.code];
   if (k) { kb[k] = true; e.preventDefault(); }
@@ -3243,6 +3346,13 @@ addEventListener('keydown', e => {
     else if (e.code === 'Escape') laterInstall();
     return;
   }
+  // al abrir el overlay desde el teclado, la tecla no debe activar el botón que recibe el foco
+  if (state === 'continue') {
+    if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); acceptContinue(); }
+    else if (e.code === 'Escape') declineContinue();
+    return;
+  }
+  if (e.code === 'KeyR' && (state === 'title' || state === 'gameover') && crmOn()) { e.preventDefault(); openRewards(); return; }
   if (e.code === 'Enter' || e.code === 'Space') requestStart();
   if (e.code === 'KeyP' || e.code === 'Escape') togglePause();
   if (e.code === 'KeyM') toggleMute();
@@ -3254,6 +3364,16 @@ document.addEventListener('visibilitychange', () => {
 });
 
 function toggleMute() { AudioSys.setMuted(!AudioSys.muted); }
+
+// Programa de premios: el overlay se queda con la entrada y durante el video calla la música
+function openRewards() {
+  if (state === 'gameover' && !CRM.registered) CRM.openRegister(); else CRM.openRewards();
+}
+if (CRM) CRM.onOverlay = kind => {
+  kb.left = kb.right = kb.fire = false; ptrs.clear(); syncTouch();
+  if (!AudioSys.ac) return;
+  if (kind === 'video') AudioSys.ac.suspend(); else AudioSys.ac.resume();
+};
 
 // Cambia entre el modo navideño y el clásico (solo desde el inicio) y lo recuerda
 function setXmas(on) {
@@ -3282,7 +3402,18 @@ function zoneAt(vx, vy) {
     if (inside(L.bL, px, vy, 2)) return 'later';
     return 'modal';
   }
-  if (state === 'title') { const T = titleLayout(); if (T.btn && inside(T.btn, px, vy, 3)) return 'install'; }
+  if (state === 'continue') {
+    const L = continueLayout();
+    if (inside(L.bI, px, vy, 2)) return 'continue';
+    if (inside(L.bL, px, vy, 2)) return 'nocontinue';
+    return 'modal';
+  }
+  if (state === 'title') {
+    const T = titleLayout();
+    if (T.btn && inside(T.btn, px, vy, 3)) return 'install';
+    if (T.rbtn && inside(T.rbtn, px, vy, 3)) return 'rewards';
+  }
+  if (state === 'gameover') { const b = gameOverBtn(); if (b && inside(b, px, vy, 3)) return 'rewards'; }
   if (DECK_H && vy >= H) {
     const [L, R, F] = deckBtns;
     if (vx >= F.x - 4) return 'fire';
@@ -3319,6 +3450,7 @@ cvs.addEventListener('pointerdown', e => {
   else if (z === 'langclose') langOpen = false;
   else if (z && z.startsWith('pick:')) pickLang(z.slice(5));
   else if (z === 'later') laterInstall();
+  else if (z === 'nocontinue') declineContinue();
   else if (z === 'closehelp') helpOpen = false;
   else if (z === 'fire' || z === 'screen') { if (paused) paused = false; else requestStart(); }
   syncTouch();
@@ -3331,7 +3463,13 @@ cvs.addEventListener('pointermove', e => {
   if (z === 'left' || z === 'right' || z === 'fire') { ptrs.set(e.pointerId, z); syncTouch(); }
 });
 const release = e => {
-  if (e.type === 'pointerup' && ptrs.get(e.pointerId) === 'install' && zoneAt(...toView(e)) === 'install') doInstall();
+  // los botones que abren algo encima actúan al soltar, para que el toque no caiga en el overlay
+  const z = e.type === 'pointerup' && ptrs.get(e.pointerId);
+  if ((z === 'install' || z === 'rewards' || z === 'continue') && zoneAt(...toView(e)) === z) {
+    if (z === 'install') doInstall();
+    else if (z === 'rewards') openRewards();
+    else acceptContinue();
+  }
   ptrs.delete(e.pointerId);
   syncTouch();
 };
@@ -3453,6 +3591,7 @@ window.__vaquitas = {
   },
   leave: n => { let k = 0; for (const i of inv) if (i.alive && ++k > n) i.alive = false; },
   get xmas() { return XMAS; }, setXmas: on => setXmas(on),
+  get crm() { return CRM && { online: CRM.online, points: CRM.points, extraLives: CRM.extraLives, registered: CRM.registered, busy: CRM.busy, continued }; },
   spawnSanta: () => { santaT = 0; }, get santa() { return santa && { x: santa.x, dir: santa.dir, dropped: santa.dropped }; },
   dropGift: (k, x = player.x + 7) => { powerups.push(newGift(x, 40, k)); }, applyGift: k => applyGift(k),
   forceGrumpy: () => { const p = powerups.find(q => q.gift && q.state === 'ground'); if (p) maybeGrumpy(p, true); return !!grumpy; },
