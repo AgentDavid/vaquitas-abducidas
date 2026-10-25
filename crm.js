@@ -27,7 +27,7 @@ const TX = {
     watch: 'Ver video y ganar', register: 'Registrarme', close: 'Cerrar', cont: 'Continuar', back: 'Volver',
     registered: 'Estás registrado: tus puntos quedan a tu nombre.',
     pitch: 'Regístrate para que tus puntos queden a tu nombre y participar en las promociones de Elektra.',
-    loading: 'Cargando video…', tapToPlay: '▶ Ver video', closeVideo: 'Cerrar video',
+    loading: 'Cargando video…', tapToPlay: 'Ver video', closeVideo: 'Cerrar video',
     prize: 'Mira el video completo y gana {0}', pts: '+{0} puntos', life1: '+1 vida extra', livesN: '+{0} vidas extra',
     leaveWarn: 'Si cierras el video antes de que termine no ganas el premio.',
     checking: 'Validando tu premio…', won: '¡Ganaste!', noPrize: 'Esta vez no hay premio',
@@ -52,7 +52,7 @@ const TX = {
     watch: 'Watch video and win', register: 'Sign up', close: 'Close', cont: 'Continue', back: 'Back',
     registered: 'You are signed up: your points are saved under your name.',
     pitch: 'Sign up so your points are saved under your name and to join Elektra promotions.',
-    loading: 'Loading video…', tapToPlay: '▶ Watch video', closeVideo: 'Close video',
+    loading: 'Loading video…', tapToPlay: 'Watch video', closeVideo: 'Close video',
     prize: 'Watch the whole video and win {0}', pts: '+{0} points', life1: '+1 extra life', livesN: '+{0} extra lives',
     leaveWarn: 'If you close the video before it ends you will not get the prize.',
     checking: 'Checking your prize…', won: 'You won!', noPrize: 'No prize this time',
@@ -119,50 +119,56 @@ async function refresh() {
 // ======================================================================
 //  Interfaz (overlay HTML)
 // ======================================================================
+// Todo con la letra pixel del juego (fonts/vaquitas-pixel.woff2, sale de FONT_SRC con tools/pixel-font.py).
+// La fuente mide 8 pixeles por em: a 16 px cada pixel ocupa 2. Lo que escribe el jugador va en VT323
+// (pixel con minúsculas y acentos, licencia OFL), a 20 px para que el celular no haga zoom al enfocar.
+const PIXEL = `"Vaquitas Pixel","VT323",ui-monospace,monospace`;
 const CSS = `
+@font-face{font-family:"Vaquitas Pixel";src:url(fonts/vaquitas-pixel.woff2) format("woff2");font-display:swap}
+@font-face{font-family:"VT323";src:url(fonts/vt323.woff2) format("woff2");font-display:swap}
 .crm{position:fixed;inset:0;z-index:10;display:flex;padding:16px;overflow-y:auto;background:rgba(4,8,24,.85);
-  font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#dfe6ff;
+  font:12px/1.5 ${PIXEL};text-transform:uppercase;color:#dfe6ff;-webkit-font-smoothing:none;font-smooth:never;
   -webkit-user-select:text;user-select:text;touch-action:auto}
 .crm[hidden]{display:none}
 .crm:focus{outline:none}
-.crm-card{width:100%;max-width:380px;margin:auto;padding:20px 18px;background:#0b1640;border:2px solid #1f5fd1;
-  border-radius:4px;box-shadow:0 0 0 2px #06123a,0 8px 0 #050a1f}
-.crm h2{margin:0 0 14px;text-align:center;font:700 20px/1.2 ui-monospace,Menlo,Consolas,monospace;letter-spacing:1px;
-  text-transform:uppercase;color:#ffd84a}
-.crm p{margin:0 0 12px;font-size:14px;color:#c3cdf0}
+.crm button,.crm input{font-family:inherit;text-transform:inherit}
+.crm h2,.crm b,.crm strong{font-weight:400}   /* sin negrita sintética: emborrona los pixeles */
+.crm-card{width:100%;max-width:380px;margin:auto;padding:20px 16px;background:#0b1640;border:2px solid #1f5fd1;
+  box-shadow:0 0 0 2px #06123a,0 6px 0 #050a1f}
+.crm h2{margin:0 0 16px;text-align:center;font-size:24px;line-height:1.25;color:#ffd84a;text-shadow:2px 2px 0 #050a1f}
+.crm p{margin:0 0 12px;color:#c3cdf0}
 .crm a{color:#7fd0ff}
-.crm-bal{display:flex;gap:10px;margin:0 0 12px}
-.crm-bal div{flex:1;padding:10px;text-align:center;background:#06123a;border:1px solid #1c2f6e;border-radius:3px}
-.crm-bal b{display:block;font:700 26px/1.1 ui-monospace,Menlo,Consolas,monospace;color:#fff}
-.crm-bal span{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#7fb2ff}
-.crm-btn{display:block;width:100%;min-height:46px;margin:10px 0 0;padding:10px 14px;cursor:pointer;color:#fff;
-  font:700 15px/1.2 ui-monospace,Menlo,Consolas,monospace;letter-spacing:1px;text-transform:uppercase;
-  background:#16307a;border:0;border-bottom:3px solid #06123a;border-radius:3px}
-.crm-primary{background:#d03a33;border-bottom-color:#6e1514}
-.crm-ghost{background:transparent;border-bottom:0;color:#9ccaff}
+.crm-bal{display:flex;gap:8px;margin:0 0 14px}
+.crm-bal div{flex:1;padding:12px 6px 10px;text-align:center;background:#06123a;border:2px solid #1c2f6e}
+.crm-bal b{display:block;margin-bottom:8px;font-size:32px;line-height:1;font-weight:400;color:#fff;text-shadow:2px 2px 0 #050a1f}
+.crm-bal span{font-size:12px;color:#7fb2ff}
+.crm-btn{display:block;width:100%;min-height:46px;margin:10px 0 4px;padding:12px;cursor:pointer;color:#fff;font-size:16px;line-height:1.25;
+  background:#16307a;border:0;box-shadow:0 4px 0 #06123a;text-shadow:2px 2px 0 #06123a}
+.crm-btn:active:not(:disabled){transform:translateY(4px);box-shadow:none}
+.crm-primary{background:#d03a33;box-shadow:0 4px 0 #6e1514;text-shadow:2px 2px 0 #6e1514}
+.crm-ghost{background:transparent;box-shadow:none;color:#9ccaff;text-shadow:none}
 .crm-btn:disabled{opacity:.5;cursor:default}
 .crm-btn:focus-visible,.crm input:focus-visible,.crm-x:focus-visible{outline:2px solid #ffd84a;outline-offset:2px}
 .crm-ok{color:#9fe39f !important}
-.crm p.crm-big{margin:6px 0 14px;text-align:center;font:700 26px/1.2 ui-monospace,Menlo,Consolas,monospace;color:#fff}
-.crm-field{display:block;margin:0 0 10px;font-size:13px;color:#9ccaff}
-.crm-field input{display:block;width:100%;margin-top:4px;padding:10px;font-size:16px;color:#fff;background:#040818;
-  border:1px solid #2a3d78;border-radius:3px}
-.crm-check{display:flex;gap:10px;align-items:flex-start;margin:10px 0;font-size:13px;color:#c3cdf0}
-.crm-check input{flex:none;width:20px;height:20px;margin-top:1px;accent-color:#d03a33}
-.crm-err{margin:4px 0 0 !important;font-size:13px !important;color:#ff8f86 !important}
+.crm p.crm-big{margin:4px 0 16px;text-align:center;font-size:24px;line-height:1.25;color:#fff;text-shadow:2px 2px 0 #050a1f}
+.crm-field{display:block;margin:0 0 12px;color:#9ccaff}
+.crm-field input{display:block;width:100%;margin-top:6px;padding:6px 10px;font:20px/1.2 "VT323",${PIXEL};text-transform:none;
+  color:#fff;background:#040818;border:2px solid #2a3d78;border-radius:0}
+.crm-check{display:flex;gap:10px;align-items:flex-start;margin:12px 0;color:#c3cdf0}
+.crm-check input{flex:none;width:20px;height:20px;margin:0;accent-color:#d03a33}
+.crm-err{margin:6px 0 0 !important;color:#ff8f86 !important}
 .crm-err:empty{display:none}
 .crm-video{padding:0;background:#000}
 .crm-video .crm-card{position:relative;display:flex;flex-direction:column;max-width:none;height:100%;margin:0;padding:0;
-  background:#000;border:0;border-radius:0;box-shadow:none}
+  background:#000;border:0;box-shadow:none}
 .crm-vtop{display:flex;align-items:center;gap:12px;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 10px}
-.crm-prize{flex:1;margin:0 !important;font:700 14px/1.3 ui-monospace,Menlo,Consolas,monospace !important;
-  text-transform:uppercase;color:#ffd84a !important}
-.crm-x{flex:none;width:40px;height:40px;cursor:pointer;font-size:18px;color:#fff;background:rgba(255,255,255,.14);border:0;border-radius:50%}
+.crm-prize{flex:1;margin:0 !important;font-size:16px;line-height:1.25;color:#ffd84a !important}
+.crm-x{flex:none;width:40px;height:40px;cursor:pointer;font-size:16px;color:#fff;background:#16307a;border:0;box-shadow:0 3px 0 #06123a}
 .crm-x:disabled{visibility:hidden}
 .crm-video video{flex:1;width:100%;min-height:0;background:#000;object-fit:contain}
-.crm-bar{height:4px;background:#1c2758}
-.crm-bar i{display:block;width:0;height:100%;background:#ffd84a;transition:width .25s linear}
-.crm-status{min-height:1.45em;margin:0 !important;padding:10px 12px calc(env(safe-area-inset-bottom,0px) + 10px);text-align:center}
+.crm-bar{height:6px;background:#1c2758}
+.crm-bar i{display:block;width:0;height:100%;background:#ffd84a;transition:width .25s steps(4)}
+.crm-status{min-height:1.8em;margin:0 !important;padding:12px 12px calc(env(safe-area-inset-bottom,0px) + 12px);text-align:center}
 .crm-play{position:absolute;left:50%;top:50%;width:auto;transform:translate(-50%,-50%)}
 .crm-play[hidden]{display:none}`;
 
@@ -218,7 +224,7 @@ function show(nodes, kind = 'panel') {
   card.replaceChildren(...nodes);
   root.hidden = false;
   setKind(kind);
-  // En el video el foco va al overlay y no al ✕, para que un Enter o Espacio no lo cierre por accidente
+  // En el video el foco va al overlay y no a la X, para que un Enter o Espacio no lo cierre por accidente
   const f = kind === 'video' ? root : card.querySelector('[data-focus]') || card.querySelector('button:not(:disabled), input');
   if (f) f.focus({ preventScroll: true });
 }
@@ -234,7 +240,7 @@ function rewardsView() {
   const watch = button(t('watch'), 'crm-primary', async () => { await watchVideo({ stay: true }); rewardsView(); });
   const nodes = [el('h2', '', t('title')), balance(), el('p', '', t('livesHint')), watch];
   if (Date.now() < S.noVideoUntil) { watch.disabled = true; nodes.push(el('p', 'crm-err', t('noVideos'))); }
-  if (S.registered) nodes.push(el('p', 'crm-ok', '✓ ' + t('registered')));
+  if (S.registered) nodes.push(el('p', 'crm-ok', t('registered')));
   else nodes.push(el('p', '', t('pitch')), button(t('register'), '', registerView));
   nodes.push(button(t('close'), 'crm-ghost', hide));
   show(nodes);
@@ -333,7 +339,7 @@ function playInsert() {
     video.preload = 'auto';
     video.disablePictureInPicture = true;
     const prize = el('p', 'crm-prize', t('loading'));
-    const x = el('button', 'crm-x', '✕');
+    const x = el('button', 'crm-x', 'X');
     x.type = 'button';
     x.setAttribute('aria-label', t('closeVideo'));
     const top = el('div', 'crm-vtop');
