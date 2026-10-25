@@ -124,7 +124,7 @@ async function refresh() {
 // (pixel con minúsculas y acentos, licencia OFL), a 20 px para que el celular no haga zoom al enfocar.
 const PIXEL = `"Vaquitas Pixel","VT323",ui-monospace,monospace`;
 const CSS = `
-@font-face{font-family:"Vaquitas Pixel";src:url(fonts/vaquitas-pixel.woff2) format("woff2");font-display:swap}
+@font-face{font-family:"Vaquitas Pixel";src:url(fonts/vaquitas-pixel.woff2?v=2) format("woff2");font-display:swap}
 @font-face{font-family:"VT323";src:url(fonts/vt323.woff2) format("woff2");font-display:swap}
 .crm{position:fixed;inset:0;z-index:10;display:flex;padding:16px;overflow-y:auto;background:rgba(4,8,24,.85);
   font:12px/1.5 ${PIXEL};text-transform:uppercase;color:#dfe6ff;-webkit-font-smoothing:none;font-smooth:never;

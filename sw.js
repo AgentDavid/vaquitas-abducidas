@@ -1,8 +1,8 @@
 // Service worker: deja el juego jugable sin conexión.
 // Sube VERSION cada vez que publiques cambios para que los jugadores reciban la versión nueva.
-const VERSION = 'vaquitas-v15';
+const VERSION = 'vaquitas-v16';
 const CORE = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png',
-  'crm.js', 'vendor/crm-games.js', 'crm-config', 'fonts/vaquitas-pixel.woff2', 'fonts/vt323.woff2'];
+  'crm.js', 'vendor/crm-games.js', 'crm-config', 'fonts/vaquitas-pixel.woff2?v=2', 'fonts/vt323.woff2'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
