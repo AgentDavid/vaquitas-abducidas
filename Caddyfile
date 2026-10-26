@@ -10,7 +10,7 @@
 	@fresh path / /index.html /sw.js /manifest.webmanifest /crm.js /crm-config
 	header @fresh Cache-Control "no-cache"
 
-	# Programa de premios Elektra: la config del CRM sale de las variables del servicio
+	# Programa de premios: la config del CRM sale de las variables del servicio
 	# (CRM_API_URL y CRM_GAME_KEY en Railway). Rotar la llave = cambiar la variable y redesplegar.
 	# Se sirve sin extensión porque Cloudflare cachea los .js en el edge y la llave nueva no llegaría.
 	@crmconfig path /crm-config

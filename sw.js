@@ -1,6 +1,6 @@
 // Service worker: deja el juego jugable sin conexión.
 // Sube VERSION cada vez que publiques cambios para que los jugadores reciban la versión nueva.
-const VERSION = 'vaquitas-v16';
+const VERSION = 'vaquitas-v17';
 const CORE = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png',
   'crm.js', 'vendor/crm-games.js', 'crm-config', 'fonts/vaquitas-pixel.woff2?v=2', 'fonts/vt323.woff2'];
 
@@ -20,7 +20,7 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  // La API del CRM y los videos de Elektra (otro dominio) siempre van a la red, sin caché
+  // La API del CRM y los videos patrocinados (otro dominio) siempre van a la red, sin caché
   if (url.origin !== location.origin && url.hostname !== 'fonts.googleapis.com' && url.hostname !== 'fonts.gstatic.com') return;
   // Código y config del programa de premios: primero red (revalidando la caché HTTP, que Cloudflare
   // alarga a 4 h), para que una llave o versión nueva llegue al instante

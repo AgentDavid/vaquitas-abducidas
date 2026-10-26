@@ -40,7 +40,7 @@
 <body>
 <div id="wrap"><canvas id="c" aria-label="Vaquitas Abducidas"></canvas></div>
 
-<!-- Programa de premios Elektra (CRM): config inyectada por Caddy, SDK e interfaz. Opcional: sin ellos el juego sigue igual. -->
+<!-- Programa de premios (CRM): config inyectada por Caddy, SDK e interfaz. Opcional: sin ellos el juego sigue igual. -->
 <script src="crm-config"></script>
 <script src="vendor/crm-games.js"></script>
 <script src="crm.js"></script>
@@ -542,11 +542,11 @@ const TX = {
     tapCont: 'TOCA PARA CONTINUAR', tapContC: 'TOCA PARA SEGUIR', enterCont: 'ENTER PARA CONTINUAR',
     cleared: '¡OLEADA SUPERADA!', clearedC: '¡SUPERADA!', bonus: 'BONO LECHERO +{0}', bonusC: 'BONO +{0}',
     fire: 'FUEGO', pause: 'PAUSA', tapScreen: 'TOCA LA PANTALLA', pCont: 'P PARA CONTINUAR', language: 'IDIOMA',
-    // programa de premios Elektra
-    rewards: 'PREMIOS', crmPts: 'PUNTOS ELEKTRA {0}', crmPtsC: '{0} PUNTOS', crmLives: 'VIDAS EXTRA {0}', crmLivesC: '{0} VIDAS',
+    // programa de premios
+    rewards: 'PREMIOS', crmPts: 'PUNTOS {0}', crmPtsC: '{0} PUNTOS', crmLives: 'VIDAS EXTRA {0}', crmLivesC: '{0} VIDAS',
     noTrucks: '¡SIN CAMIONES!', haveLife: 'TIENES 1 VIDA EXTRA', haveLives: 'TIENES {0} VIDAS EXTRA', useLife: 'USAR VIDA',
-    watchBody: 'MIRA UN VIDEO DE ELEKTRA Y GANA UN PREMIO', watch: 'VER VIDEO', noThanks: 'NO, GRACIAS',
-    plusLife: '+1 VIDA', plusPts: '+{0} PUNTOS ELEKTRA', register: 'REGISTRARME', saveScore: 'REGISTRATE Y GUARDA TUS PUNTOS'
+    watchBody: 'MIRA UN VIDEO Y GANA UN PREMIO', watch: 'VER VIDEO', noThanks: 'NO, GRACIAS',
+    plusLife: '+1 VIDA', plusPts: '+{0} PUNTOS', register: 'REGISTRARME', saveScore: 'REGISTRATE Y GUARDA TUS PUNTOS'
   },
   en: {
     wave: 'WAVE {0}', sub1: 'PROTECT THE MILK!', sub1C: 'GUARD THE MILK!', sub2: 'DIVE ATTACKS!',
@@ -564,10 +564,10 @@ const TX = {
     tapCont: 'TAP TO CONTINUE', enterCont: 'ENTER TO CONTINUE',
     cleared: 'WAVE CLEARED!', clearedC: 'CLEARED!', bonus: 'MILK BONUS +{0}', bonusC: 'BONUS +{0}',
     fire: 'FIRE', pause: 'PAUSED', tapScreen: 'TAP THE SCREEN', pCont: 'P TO CONTINUE', language: 'LANGUAGE',
-    rewards: 'REWARDS', crmPts: 'ELEKTRA POINTS {0}', crmPtsC: '{0} POINTS', crmLives: 'EXTRA LIVES {0}', crmLivesC: '{0} LIVES',
+    rewards: 'REWARDS', crmPts: 'POINTS {0}', crmPtsC: '{0} POINTS', crmLives: 'EXTRA LIVES {0}', crmLivesC: '{0} LIVES',
     noTrucks: 'NO TRUCKS LEFT!', haveLife: 'YOU HAVE 1 EXTRA LIFE', haveLives: 'YOU HAVE {0} EXTRA LIVES', useLife: 'USE LIFE',
-    watchBody: 'WATCH AN ELEKTRA VIDEO AND WIN A PRIZE', watch: 'WATCH VIDEO', noThanks: 'NO, THANKS',
-    plusLife: '+1 LIFE', plusPts: '+{0} ELEKTRA POINTS', register: 'SIGN UP', saveScore: 'SIGN UP AND KEEP YOUR POINTS'
+    watchBody: 'WATCH A VIDEO AND WIN A PRIZE', watch: 'WATCH VIDEO', noThanks: 'NO, THANKS',
+    plusLife: '+1 LIFE', plusPts: '+{0} POINTS', register: 'SIGN UP', saveScore: 'SIGN UP AND KEEP YOUR POINTS'
   },
   zh: {
     wave: '第 {0} 波', sub1: '保护牛奶！', sub2: '俯冲攻击！', sub3: '舰队躁动！', subN: '更快了！', plusCow: '+1 奶牛',
@@ -1581,7 +1581,7 @@ let santa = null, santaT = rand(2, 4), grumpy = null, hats = [];
 let stockings = 0, stockAt = -9, stockBonus = 0, waveLost = false;
 let freezeT = 0, starT = 0, fgt = 0;   // fgt: reloj de la flota (se detiene mientras está congelada)
 let form = { x: 48, y: 34, dir: 1, t: 0, frame: 0, note: 0 };
-// Programa de premios Elektra (crm.js). Sin conexión con el CRM no aparece nada de esto.
+// Programa de premios (crm.js). Sin conexión con el CRM no aparece nada de esto.
 const CRM = window.VaquitasCRM || null;
 const crmOn = () => !!(CRM && CRM.online);
 let continued = false;        // una sola continuación por partida

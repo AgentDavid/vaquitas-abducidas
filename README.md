@@ -26,7 +26,7 @@ y abre http://localhost:8765
 - `privacidad.html`: política de privacidad (la pide Google Play).
 - `.well-known/assetlinks.json`: vincula el sitio con la app de Android (TWA). Lleva el package ID y las huellas SHA-256 de la firma.
 - `Dockerfile` y `Caddyfile`: servidor estático para el despliegue en Railway.
-- `crm.js`, `crm-config.js` y `vendor/crm-games.js`: programa de premios de Elektra (ver abajo).
+- `crm.js`, `crm-config.js` y `vendor/crm-games.js`: programa de premios (ver abajo).
 - `fonts/`: letra pixel para los textos HTML (panel de premios, registro, privacidad).
   `vaquitas-pixel.woff2` es la misma fuente 5x7 del canvas; se genera desde `FONT_SRC` con
   `python tools/pixel-font.py` (requiere `pip install fonttools brotli`); vuelve a correrlo si
@@ -35,14 +35,14 @@ y abre http://localhost:8765
   `vt323.woff2` (licencia OFL) es solo para lo que escribe el jugador en el registro, porque
   tiene minúsculas y acentos.
 
-## Programa de premios Elektra (CRM)
+## Programa de premios (CRM)
 
 El juego se conecta al CRM de videojuegos (repo `crm_videogames`, contrato en
 `docs/integraciones/game-api-v1.md`):
 
 - **Entra al juego**: al abrir se crea una sesión con el `?src=` del QR, la campaña o la TV.
 - **Ve un insert**: al perder el último camión se ofrece seguir con una vida extra; si no
-  hay, se ofrece un video de Elektra. El botón **PREMIOS** (inicio y fin del juego, o la
+  hay, se ofrece un video patrocinado. El botón **PREMIOS** (inicio y fin del juego, o la
   tecla R) muestra el saldo y permite ver videos y registrarse.
 - **Gana recompensa**: el CRM decide si el video paga (visto completo, tope diario) y si
   da puntos o vidas extra. Las vidas extra que se gastan se cuentan en el dispositivo.

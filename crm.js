@@ -1,6 +1,6 @@
-// Programa de premios Elektra: conecta el juego con el CRM (API pública v1; el contrato está en
+// Programa de premios: conecta el juego con el CRM (API pública v1; el contrato está en
 // crm_videogames/docs/integraciones/game-api-v1.md). Abre la sesión con el ?src= del QR, reproduce
-// los videos de Elektra (inserts) que dan puntos o vidas extra y registra al jugador (opt-in).
+// los videos patrocinados (inserts) que dan puntos o vidas extra y registra al jugador (opt-in).
 // La interfaz es HTML encima del canvas. Sin configuración o sin internet todo queda oculto y el
 // juego sigue igual. El juego lo usa por window.VaquitasCRM.
 (() => {
@@ -22,11 +22,11 @@ const store = {
 // ======================================================================
 const TX = {
   es: {
-    title: 'Premios Elektra', points: 'Puntos', lives: 'Vidas extra',
+    title: 'Premios', points: 'Puntos', lives: 'Vidas extra',
     livesHint: 'Las vidas extra te dejan seguir jugando cuando pierdes tu último camión.',
     watch: 'Ver video y ganar', register: 'Registrarme', close: 'Cerrar', cont: 'Continuar', back: 'Volver',
     registered: 'Estás registrado: tus puntos quedan a tu nombre.',
-    pitch: 'Regístrate para que tus puntos queden a tu nombre y participar en las promociones de Elektra.',
+    pitch: 'Regístrate para que tus puntos queden a tu nombre y participar en las promociones.',
     loading: 'Cargando video…', tapToPlay: 'Ver video', closeVideo: 'Cerrar video',
     prize: 'Mira el video completo y gana {0}', pts: '+{0} puntos', life1: '+1 vida extra', livesN: '+{0} vidas extra',
     leaveWarn: 'Si cierras el video antes de que termine no ganas el premio.',
@@ -36,22 +36,22 @@ const TX = {
     DAILY_CAP: 'Ya ganaste todos los premios de hoy. ¡Vuelve mañana!',
     noVideos: 'No hay videos disponibles por ahora. Vuelve más tarde.',
     videoError: 'No se pudo reproducir el video. Revisa tu conexión e inténtalo de nuevo.',
-    netError: 'No hay conexión con Elektra. Inténtalo más tarde.',
+    netError: 'No hay conexión con el programa de premios. Inténtalo más tarde.',
     regTitle: 'Registro', name: 'Nombre', email: 'Correo', phone: 'Teléfono (10 dígitos)',
     contactHint: 'Escribe tu correo, tu teléfono o los dos.',
-    consent: 'Acepto el <a href="privacidad.html" target="_blank" rel="noopener">aviso de privacidad</a> y que mis datos se guarden para el programa de premios de Elektra.',
-    marketing: 'Quiero recibir promociones de Elektra.',
+    consent: 'Acepto el <a href="privacidad.html" target="_blank" rel="noopener">aviso de privacidad</a> y que mis datos se guarden para el programa de premios.',
+    marketing: 'Quiero recibir promociones.',
     sending: 'Enviando…', needName: 'Escribe tu nombre.', needContact: 'Escribe tu correo o tu teléfono.',
     needConsent: 'Para registrarte debes aceptar el aviso de privacidad.',
     tooMany: 'Demasiados intentos. Espera unos minutos.',
     welcome: '¡Listo, {0}!', welcomeBack: '¡Hola de nuevo, {0}!', welcomeBody: 'Tus puntos ya quedan a tu nombre.'
   },
   en: {
-    title: 'Elektra Rewards', points: 'Points', lives: 'Extra lives',
+    title: 'Rewards', points: 'Points', lives: 'Extra lives',
     livesHint: 'Extra lives let you keep playing when you lose your last truck.',
     watch: 'Watch video and win', register: 'Sign up', close: 'Close', cont: 'Continue', back: 'Back',
     registered: 'You are signed up: your points are saved under your name.',
-    pitch: 'Sign up so your points are saved under your name and to join Elektra promotions.',
+    pitch: 'Sign up so your points are saved under your name and to join promotions.',
     loading: 'Loading video…', tapToPlay: 'Watch video', closeVideo: 'Close video',
     prize: 'Watch the whole video and win {0}', pts: '+{0} points', life1: '+1 extra life', livesN: '+{0} extra lives',
     leaveWarn: 'If you close the video before it ends you will not get the prize.',
@@ -61,11 +61,11 @@ const TX = {
     DAILY_CAP: 'You already won every prize for today. Come back tomorrow!',
     noVideos: 'No videos available right now. Come back later.',
     videoError: 'The video could not be played. Check your connection and try again.',
-    netError: 'Cannot reach Elektra. Try again later.',
+    netError: 'Cannot reach the rewards program. Try again later.',
     regTitle: 'Sign up', name: 'Name', email: 'Email', phone: 'Phone (10 digits)',
     contactHint: 'Enter your email, your phone or both.',
-    consent: 'I accept the <a href="privacidad.html" target="_blank" rel="noopener">privacy notice</a> and agree that my data is stored for the Elektra rewards program.',
-    marketing: 'I want to receive Elektra promotions.',
+    consent: 'I accept the <a href="privacidad.html" target="_blank" rel="noopener">privacy notice</a> and agree that my data is stored for the rewards program.',
+    marketing: 'I want to receive promotions.',
     sending: 'Sending…', needName: 'Enter your name.', needContact: 'Enter your email or your phone.',
     needConsent: 'You must accept the privacy notice to sign up.',
     tooMany: 'Too many attempts. Wait a few minutes.',
