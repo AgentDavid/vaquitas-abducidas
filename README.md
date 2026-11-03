@@ -27,6 +27,9 @@ y abre http://localhost:8765
 - `.well-known/assetlinks.json`: vincula el sitio con la app de Android (TWA). Lleva el package ID y las huellas SHA-256 de la firma.
 - `Dockerfile` y `Caddyfile`: servidor estático para el despliegue en Railway.
 - `crm.js`, `crm-config.js` y `vendor/crm-games.js`: programa de premios (ver abajo).
+- `brand/logo.png`: logo de la marca. Sale en alta calidad en la pantalla de carga (la misma de
+  `azteca-plantilla`, común a todos los juegos) y pixelado dentro del juego (sobre el título y a los
+  lados del aviso de continuar); el pixelado se genera al vuelo con los colores de la marca.
 - `fonts/`: letra pixel para los textos HTML (panel de premios, registro, privacidad).
   `vaquitas-pixel.woff2` es la misma fuente 5x7 del canvas; se genera desde `FONT_SRC` con
   `python tools/pixel-font.py` (requiere `pip install fonttools brotli`); vuelve a correrlo si

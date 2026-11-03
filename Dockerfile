@@ -4,4 +4,5 @@ COPY index.html privacidad.html sw.js manifest.webmanifest crm.js crm-config.js 
 COPY vendor /srv/vendor
 COPY fonts /srv/fonts
 COPY icons /srv/icons
+COPY brand /srv/brand
 COPY .well-known /srv/.well-known

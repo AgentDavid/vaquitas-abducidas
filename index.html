@@ -35,10 +35,91 @@
     justify-content: center;
   }
   canvas { display: block; touch-action: none; outline: none; }
+
+  /* Pantalla de carga, igual en todos los juegos (azteca-plantilla): logo en alta calidad, barra y texto */
+  .fullscreen-azteca {
+    position: fixed; inset: 0; z-index: 100;
+    display: flex; justify-content: center; align-items: center;
+    color: #fff; background-color: #333188;
+    font: 2vh 'Myriad Pro Regular', 'Myriad Pro', system-ui, sans-serif;
+  }
+  .fullscreen-azteca div { display: flex; background-size: contain; background-repeat: no-repeat; background-position: center; }
+  .loading-screen { flex-direction: column; justify-content: space-around; }
+  .loading-logo { width: 100px; height: 100px; background-image: url("brand/logo.png"); display: none !important; opacity: 0; }
+  .loading-logo.on { display: flex !important; }
+  .loading-bar { opacity: 0; width: 10em; height: 1em; overflow: hidden; border-radius: 1em; border: 1px solid #f7b61d; }
+  .loading-bar-inner { width: 0; transition: width 0.3s ease; height: 100%; background-color: #f7b61d; }
+  .loading-text { opacity: 0; font-family: 'Myriad Pro Semibold', 'Myriad Pro', system-ui, sans-serif; font-weight: 600; padding: 1em; color: #f7b61d; }
+  .loading-bar-outer { flex-direction: column; justify-content: center; align-items: center; }
 </style>
 </head>
 <body>
 <div id="wrap"><canvas id="c" aria-label="Vaquitas Abducidas"></canvas></div>
+
+<div id="loading-screen" class="fullscreen-azteca loading-screen">
+  <div id="loading-logo" class="loading-logo" role="img" aria-label="Azteca"></div>
+  <div class="loading-bar-outer">
+    <div id="loading-bar" class="loading-bar"><div id="loading-bar-inner" class="loading-bar-inner"></div></div>
+    <div id="loading-text" class="loading-text">Cargando...</div>
+  </div>
+</div>
+<script>
+// Pantalla de carga (portada de azteca-plantilla, src/loading-tools.js): el logo en alta calidad
+// aparece, se cargan los recursos y la pantalla se desvanece. Mientras está, el juego no recibe teclas.
+window.VaquitasLoader = (() => {
+  const LOADING = { es: 'Cargando...', en: 'Loading...', zh: '加载中...', hi: 'लोड हो रहा है...', ar: 'جارٍ التحميل...',
+    fr: 'Chargement...', bn: 'লোড হচ্ছে...', pt: 'Carregando...', ru: 'Загрузка...', ur: 'لوڈ ہو رہا ہے...' };
+  const saved = (() => { try { return localStorage.getItem('vaquitasLang'); } catch { return null; } })();
+  const code = [saved, ...(navigator.languages || [navigator.language || ''])].map(l => String(l || '').slice(0, 2).toLowerCase()).find(l => LOADING[l]);
+  const $ = id => document.getElementById(id);
+  $('loading-text').textContent = LOADING[code || 'en'];
+  const fade = async (el, from, to) => {
+    const a = el.animate([{ opacity: from }, { opacity: to }], { duration: 1000, easing: 'ease', fill: 'forwards' });
+    // sin cuadros (pestaña en segundo plano) la animación no avanza: no se espera más de 1.5 s
+    await Promise.race([a.finished, new Promise(r => setTimeout(r, 1500))]);
+    el.style.opacity = String(to);
+    a.cancel();
+  };
+  const loadLogo = async () => {
+    await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = resolve;
+      img.onerror = () => reject(new Error('Failed to load logo: brand/logo.png'));
+      img.src = 'brand/logo.png';
+    });
+    $('loading-logo').classList.add('on');
+    await Promise.all([$('loading-logo'), $('loading-bar'), $('loading-text')].map(el => fade(el, 0, 1)));
+  };
+  const loadAssets = async urls => {
+    const bar = $('loading-bar-inner');
+    let loaded = 0;
+    await Promise.all(urls.map(async url => {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error(`Failed to load asset: ${url} (${r.status})`);
+      await r.blob();
+      bar.style.width = `${++loaded / urls.length * 100}%`;
+    }));
+    bar.style.width = '100%';
+  };
+  const hide = async () => {
+    const screen = $('loading-screen');
+    await fade(screen, 1, 0);
+    screen.style.display = 'none';
+  };
+  const L = { busy: true };
+  L.done = (async () => {
+    try {
+      await loadLogo();
+      await loadAssets(['fonts/vaquitas-pixel.woff2?v=2', 'fonts/vt323.woff2']);
+    } catch (e) {
+      console.error('Unable to complete loading:', e);   // sin logo o sin red el juego arranca igual
+    }
+    await hide();
+    L.busy = false;
+  })();
+  return L;
+})();
+</script>
 
 <!-- Programa de premios (CRM): config inyectada por Caddy, SDK e interfaz. Opcional: sin ellos el juego sigue igual. -->
 <script src="crm-config"></script>
@@ -56,7 +137,8 @@
 const RS = 2;
 const TRUCK_W = 20;
 const PTS = [30, 20, 10];  // por tipo de ovni
-const TOP = 14;            // bajo el marcador
+const HUD_Y = 5;           // margen superior del marcador y los botones
+const TOP = 16;            // bajo el marcador
 
 const cvs = document.getElementById('c');
 const ctx = cvs.getContext('2d');
@@ -120,15 +202,16 @@ setLayout(224, 256, 0);
 // ======================================================================
 //  Paleta y sprites (pixel art como texto, a 2x de detalle)
 // ======================================================================
+// Verde, azul, rojo, amarillo y morado son los de la marca; las sombras y brillos salen de ellos
 const PAL = {
   w: '#f4f7ff', v: '#c3cde6', k: '#14161f', a: '#8a90a6', A: '#4e5468',
-  g: '#5bea6b', G: '#2a9b45', h: '#17602b', l: '#c6ff4a',
+  g: '#42bb5a', G: '#40a74c', h: '#1d6630', l: '#8fe39e',
   c: '#7fe3ff', C: '#2f9fcf', e: '#e2fbff',
-  p: '#b06cff', P: '#6a3bc4', q: '#d9b3ff', Q: '#3f1f7a',
-  y: '#ffe14d', o: '#ffa63d',
-  r: '#ff5a4e', R: '#b8282a', d: '#ffa198', D: '#6b1218',
+  p: '#6947a7', P: '#442e92', q: '#a58fdb', Q: '#2a1c63',
+  y: '#fabd4a', o: '#ffa63d',
+  r: '#ef2e32', R: '#b3171c', d: '#ff8a8c', D: '#6b1218',
   m: '#ff6fa8', M: '#b83b70', n: '#ff9fbf',
-  b: '#1f5fd1', B: '#0c2f8a', i: '#6fa2ff', t: '#efe2b8',
+  b: '#1b65b6', B: '#0c3c7a', i: '#3d7bc7', t: '#efe2b8',
   u: '#8a5a2b', U: '#5e3b1a', z: '#d9b98a', s: '#eef4ff', S: '#b9c9ea'
 };
 
@@ -543,9 +626,9 @@ const TX = {
     cleared: '¡OLEADA SUPERADA!', clearedC: '¡SUPERADA!', bonus: 'BONO LECHERO +{0}', bonusC: 'BONO +{0}',
     fire: 'FUEGO', pause: 'PAUSA', tapScreen: 'TOCA LA PANTALLA', pCont: 'P PARA CONTINUAR', language: 'IDIOMA',
     // programa de premios
-    rewards: 'PREMIOS', crmPts: 'PUNTOS {0}', crmPtsC: '{0} PUNTOS', crmLives: 'VIDAS EXTRA {0}', crmLivesC: '{0} VIDAS',
+    rewards: 'RECOMPENSAS', crmPts: 'PUNTOS {0}', crmPtsC: '{0} PUNTOS', crmLives: 'VIDAS EXTRA {0}', crmLivesC: '{0} VIDAS',
     noTrucks: '¡SIN CAMIONES!', haveLife: 'TIENES 1 VIDA EXTRA', haveLives: 'TIENES {0} VIDAS EXTRA', useLife: 'USAR VIDA',
-    watchBody: 'MIRA UN VIDEO Y GANA UN PREMIO', watch: 'VER VIDEO', noThanks: 'NO, GRACIAS',
+    watchBody: 'MIRA UN VIDEO PARA OBTENER UNA VIDA EXTRA', watch: 'VER VIDEO', noThanks: 'NO, GRACIAS',
     plusLife: '+1 VIDA', plusPts: '+{0} PUNTOS', register: 'REGISTRARME', saveScore: 'REGISTRATE Y GUARDA TUS PUNTOS'
   },
   en: {
@@ -566,7 +649,7 @@ const TX = {
     fire: 'FIRE', pause: 'PAUSED', tapScreen: 'TAP THE SCREEN', pCont: 'P TO CONTINUE', language: 'LANGUAGE',
     rewards: 'REWARDS', crmPts: 'POINTS {0}', crmPtsC: '{0} POINTS', crmLives: 'EXTRA LIVES {0}', crmLivesC: '{0} LIVES',
     noTrucks: 'NO TRUCKS LEFT!', haveLife: 'YOU HAVE 1 EXTRA LIFE', haveLives: 'YOU HAVE {0} EXTRA LIVES', useLife: 'USE LIFE',
-    watchBody: 'WATCH A VIDEO AND WIN A PRIZE', watch: 'WATCH VIDEO', noThanks: 'NO, THANKS',
+    watchBody: 'WATCH A VIDEO TO GET AN EXTRA LIFE', watch: 'WATCH VIDEO', noThanks: 'NO, THANKS',
     plusLife: '+1 LIFE', plusPts: '+{0} POINTS', register: 'SIGN UP', saveScore: 'SIGN UP AND KEEP YOUR POINTS'
   },
   zh: {
@@ -922,17 +1005,64 @@ function makeTitleLogo(text, scale, fill, lower, outline, shadow, thick, snow = 
   c.lw = lw; c.lh = lh; c.sc = scale; c.th = thick;
   return c;
 }
-const LOGO = makeTitleLogo('VAQUITAS', 4, '#ffffff', '#9ccaff', '#1f5fd1', '#06123a', 2);
-const SUBLOGO = makeTitleLogo('ABDUCIDAS', 2, '#c6ff4a', '#5bea6b', '#14361f', '#050a1f', 1);
+// Las dos palabras del título van del mismo tamaño, con los colores de la marca
+const LOGO = makeTitleLogo('VAQUITAS', 3, '#3d7bc7', '#1b65b6', '#ffffff', '#06123a', 1);
+const SUBLOGO = makeTitleLogo('ABDUCIDAS', 3, '#42bb5a', '#40a74c', '#ffffff', '#050a1f', 1);
 // versiones para el modo compacto (celular vertical)
-const LOGO_S = makeTitleLogo('VAQUITAS', 2, '#ffffff', '#9ccaff', '#1f5fd1', '#06123a', 1);
-const SUBLOGO_S = makeTitleLogo('ABDUCIDAS', 1, '#c6ff4a', '#5bea6b', '#14361f', '#050a1f', 1);
+const LOGO_S = makeTitleLogo('VAQUITAS', 2, '#3d7bc7', '#1b65b6', '#ffffff', '#06123a', 1);
+const SUBLOGO_S = makeTitleLogo('ABDUCIDAS', 2, '#42bb5a', '#40a74c', '#ffffff', '#050a1f', 1);
 // versiones nevadas del modo navideño
-const LOGO_X = makeTitleLogo('VAQUITAS', 4, '#ff6b5e', '#d8322f', '#5a0d14', '#14030a', 2, true);
-const SUBLOGO_X = makeTitleLogo('ABDUCIDAS', 2, '#c6ff4a', '#5bea6b', '#14361f', '#050a1f', 1, true);
-const LOGO_XS = makeTitleLogo('VAQUITAS', 2, '#ff6b5e', '#d8322f', '#5a0d14', '#14030a', 1, true);
-const SUBLOGO_XS = SUBLOGO_S;   // a este tamaño la nieve tapa las letras
+const LOGO_X = makeTitleLogo('VAQUITAS', 3, '#ef2e32', '#d0262b', '#5a0d14', '#14030a', 1, true);
+const SUBLOGO_X = makeTitleLogo('ABDUCIDAS', 3, '#42bb5a', '#40a74c', '#14361f', '#050a1f', 1, true);
+const LOGO_XS = makeTitleLogo('VAQUITAS', 2, '#ef2e32', '#d0262b', '#5a0d14', '#14030a', 1, true);
+const SUBLOGO_XS = makeTitleLogo('ABDUCIDAS', 2, '#42bb5a', '#40a74c', '#14361f', '#050a1f', 1, true);
 const blitLogo = (img, x, y) => ctx.drawImage(img, x, y, img.lw, img.lh);
+
+// Logo de la marca pixelado (el de alta calidad sale solo en la pantalla de carga). Se reduce
+// brand/logo.png a la rejilla de sprite y cada píxel toma el color de marca más cercano; el texto
+// gris pasa a blanco para leerse sobre el cielo. Mientras no carga, no se dibuja.
+const BRAND_RGB = [PAL.g, PAL.G, PAL.i, PAL.b, PAL.p, PAL.P, PAL.r, PAL.y].map(hexRgb);
+const brandImg = new Image();
+let brandBox = null;
+const brandLogos = new Map();
+brandImg.onload = () => {
+  const c = newCanvas(brandImg.width, brandImg.height), g = c.getContext('2d');
+  g.drawImage(brandImg, 0, 0);
+  const d = g.getImageData(0, 0, c.width, c.height).data;
+  let x0 = c.width, y0 = c.height, x1 = -1, y1 = -1;
+  for (let y = 0; y < c.height; y++) for (let x = 0; x < c.width; x++) {
+    if (d[(y * c.width + x) * 4 + 3] < 32) continue;
+    x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+  }
+  if (x1 >= 0) brandBox = { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+};
+brandImg.src = 'brand/logo.png';
+// h: alto en unidades lógicas. Devuelve un canvas con lw/lh (como los del título) o null.
+function brandLogo(h) {
+  if (!brandBox) return null;
+  let c = brandLogos.get(h);
+  if (c) return c;
+  const ph = Math.round(h * RS), pw = Math.round(ph * brandBox.w / brandBox.h);
+  c = newCanvas(pw, ph);
+  const g = c.getContext('2d');
+  g.imageSmoothingQuality = 'high';
+  g.drawImage(brandImg, brandBox.x, brandBox.y, brandBox.w, brandBox.h, 0, 0, pw, ph);
+  const im = g.getImageData(0, 0, pw, ph), d = im.data;
+  for (let k = 0; k < d.length; k += 4) {
+    if (d[k + 3] < 110) { d[k + 3] = 0; continue; }
+    const px = [d[k], d[k + 1], d[k + 2]];
+    let best = [255, 255, 255];
+    if (Math.max(...px) - Math.min(...px) > 40) {
+      let bd = Infinity;
+      for (const q of BRAND_RGB) { const e = (q[0] - px[0]) ** 2 + (q[1] - px[1]) ** 2 + (q[2] - px[2]) ** 2; if (e < bd) { bd = e; best = q; } }
+    }
+    d[k] = best[0]; d[k + 1] = best[1]; d[k + 2] = best[2]; d[k + 3] = 255;
+  }
+  g.putImageData(im, 0, 0);
+  c.lw = pw / RS; c.lh = ph / RS;
+  brandLogos.set(h, c);
+  return c;
+}
 
 // ======================================================================
 //  Escenario (se regenera al cambiar el tamaño de pantalla)
@@ -2931,8 +3061,8 @@ function drawFloaters() {
 // Botones de pausa/sonido arriba al centro
 // en el inicio: idioma, modo (navideño / clásico) y sonido
 const topBtns = () => state === 'title'
-  ? [{ id: 'lang', x: W / 2 - 24, y: 1.5, w: 17, h: 9 }, { id: 'mode', x: W / 2 - 3, y: 1.5, w: 11, h: 9 }, { id: 'mute', x: W / 2 + 12, y: 1.5, w: 11, h: 9 }]
-  : [{ id: 'pause', x: W / 2 - 13, y: 1.5, w: 11, h: 9 }, { id: 'mute', x: W / 2 + 2, y: 1.5, w: 11, h: 9 }];
+  ? [{ id: 'lang', x: W / 2 - 30, y: HUD_Y - 2, w: 21, h: 11 }, { id: 'mode', x: W / 2 - 6, y: HUD_Y - 2, w: 15, h: 11 }, { id: 'mute', x: W / 2 + 12, y: HUD_Y - 2, w: 15, h: 11 }]
+  : [{ id: 'pause', x: W / 2 - (COMPACT ? 15 : 17), y: HUD_Y - 2, w: COMPACT ? 13 : 15, h: 11 }, { id: 'mute', x: W / 2 + 2, y: HUD_Y - 2, w: COMPACT ? 13 : 15, h: 11 }];
 function drawIconPause(cx, cy, s) {
   ctx.fillStyle = PAL.w;
   if (paused) {               // triángulo de "continuar"
@@ -2950,11 +3080,11 @@ function drawTopButtons() {
   for (const b of topBtns()) {
     ctx.fillStyle = 'rgba(13,26,74,0.85)';
     ctx.fillRect(b.x, b.y, b.w, b.h);
-    ctx.fillStyle = '#2a3d78';
+    ctx.fillStyle = '#1b65b6';
     ctx.fillRect(b.x, b.y, b.w, 0.5); ctx.fillRect(b.x, b.y + b.h - 0.5, b.w, 0.5);
     ctx.fillRect(b.x, b.y, 0.5, b.h); ctx.fillRect(b.x + b.w - 0.5, b.y, 0.5, b.h);
     if (b.id === 'pause') drawIconPause(b.x + b.w / 2, b.y + b.h / 2, 2.5);
-    else if (b.id === 'lang') drawText(lang.toUpperCase(), b.x + b.w / 2, b.y + 1, PAL.w, 1, 'center');
+    else if (b.id === 'lang') drawText(lang.toUpperCase(), b.x + b.w / 2, b.y + 2, PAL.w, 1, 'center');
     else if (b.id === 'mode') { const img = XMAS ? SPR.tree : SPR.cowIcon; drawSprite(img, b.x + b.w / 2 - img.width / RS / 2, b.y + b.h / 2 - img.height / RS / 2); }
     else drawIconSound(b.x + b.w / 2, b.y + b.h / 2);
   }
@@ -2969,22 +3099,22 @@ function drawHUD() {
   const shownHi = Math.max(hi, score);
   if (COMPACT) {
     // marcador compacto: puntos a la izquierda, récord a la derecha
-    drawText(pad(score), 4, 3, PAL.w);
-    drawText(pad(shownHi), W - 4, 3, '#7fb2ff', 1, 'right');
+    drawText(pad(score), 4, HUD_Y, PAL.w);
+    drawText(pad(shownHi), W - 4, HUD_Y, '#3d7bc7', 1, 'right');
   } else {
-    drawText(tr('score'), 4, 3, '#7fb2ff');
-    drawText(pad(score), 4 + Math.ceil(textWidth(tr('score'))) + 7, 3, PAL.w);
-    drawText(pad(shownHi), W - 4, 3, PAL.w, 1, 'right');
-    drawText(tr('record'), W - 4 - 42, 3, '#7fb2ff', 1, 'right');
+    drawText(tr('score'), 4, HUD_Y, '#3d7bc7');
+    drawText(pad(score), 4 + Math.ceil(textWidth(tr('score'))) + 7, HUD_Y, PAL.w);
+    drawText(pad(shownHi), W - 4, HUD_Y, PAL.w, 1, 'right');
+    drawText(tr('record'), W - 4 - 42, HUD_Y, '#3d7bc7', 1, 'right');
   }
 
   for (let i = 0; i < Math.min(lives, COMPACT ? 3 : 4); i++) drawSprite(SPR.truck, 4 + i * (COMPACT ? 21 : 23), H - 12);
   if (COMPACT) {
     const n = String(level);
-    drawText(n, W - 4, H - 9, '#9fe39f', 1, 'right');
+    drawText(n, W - 4, H - 9, '#42bb5a', 1, 'right');
     drawSprite(SPR.ufo[0][0], W - 4 - textWidth(n) - 14, H - 11);
   } else {
-    drawText(tr('wave', level), W - 4, H - 9, '#9fe39f', 1, 'right');
+    drawText(tr('wave', level), W - 4, H - 9, '#42bb5a', 1, 'right');
     if (player.triple > 0) {
       drawSprite(SPR.carton, W / 2 - 12, H - 11);
       drawText('X3 ' + Math.ceil(player.triple), W / 2 - 3, H - 9, PAL.c);
@@ -2995,11 +3125,11 @@ function drawHUD() {
 // Botón de interfaz en el canvas (ícono opcional: true = descargar, o un sprite)
 function uiBtn(label, icon = false) { return { label, icon, x: 0, y: 0, w: textWidth(label) + 12 + (icon ? 7 : 0), h: 13 }; }
 function drawUIButton(b, primary) {
-  const face = primary ? '#d03a33' : '#16307a', edge = primary ? '#6e1514' : '#06123a';
+  const face = primary ? '#ef2e32' : '#1b65b6', edge = primary ? '#8c1216' : '#06123a';
   roundRect(b.x, b.y + 1.5, b.w, b.h, edge);
   roundRect(b.x, b.y, b.w, b.h, '#050a1f');
   roundRect(b.x + 0.5, b.y + 0.5, b.w - 1, b.h - 1, face);
-  ctx.fillStyle = primary ? '#ff8f86' : '#4b84ef';
+  ctx.fillStyle = primary ? '#ff8f86' : '#3d7bc7';
   ctx.fillRect(b.x + 1.5, b.y + 1, b.w - 3, 0.5);
   let tx = b.x + 6;
   if (b.icon) { drawSprite(b.icon === true ? SPR.download : b.icon, tx, b.y + 4); tx += 7; }
@@ -3010,24 +3140,34 @@ function drawUIButton(b, primary) {
 function titleLayout() {
   const logo = COMPACT ? (XMAS ? LOGO_XS : LOGO_S) : (XMAS ? LOGO_X : LOGO);
   const sub = COMPACT ? (XMAS ? SUBLOGO_XS : SUBLOGO_S) : (XMAS ? SUBLOGO_X : SUBLOGO);
-  const gap = COMPACT ? (XMAS ? 22 : 12) : 26;   // en Navidad cabe el "¡Feliz Navidad!" entre el logo y la indicación
+  // en celular los espacios son mínimos para que quepa el logo de la marca sobre el título
+  const gap = COMPACT ? (XMAS ? 14 : 10) : 26;   // en Navidad cabe el "¡Feliz Navidad!" entre el logo y la indicación
   const btn = canInstall() ? uiBtn(trc('install'), true) : null;
   const rbtn = crmOn() ? uiBtn(tr('rewards'), SPR.star) : null;
   const btns = [btn, rbtn].filter(Boolean);
-  const recStep = COMPACT ? 12 : 16, btnGap = COMPACT ? 6 : 12;
+  const recStep = COMPACT ? 12 : 16, btnGap = COMPACT ? 4 : 12, subGap = COMPACT ? 2 : 4, stackStep = COMPACT ? 15 : 17;
   const recH = hi > 0 ? recStep : 0, balH = rbtn && !COMPACT ? recStep : 0;   // en celular el saldo se ve en el panel de premios
   const stack = btns.length === 2 && btn.w + rbtn.w + 6 > W - 8;
-  const blockH = logo.lh + 4 + sub.lh + gap + 7 + recH + balH + (btns.length ? btnGap + 13 + (stack ? 17 : 0) : 0);
-  const L = { logo, sub, btn, rbtn };
+  let blockH = logo.lh + subGap + sub.lh + gap + 7 + recH + balH + (btns.length ? btnGap + 13 + (stack ? stackStep : 0) : 0);
+  // logo de la marca sobre el título, si cabe entre el marcador y las pacas
+  const top = COMPACT ? TOP - 1 : TOP, room = SHIELD_Y - 6 - top, brandGap = COMPACT ? 3 : 6;
+  let brand = null;
+  for (const h of COMPACT ? [16, 12, 10] : [26, 22, 18]) {
+    const b = brandLogo(h);
+    if (b && blockH + b.lh + brandGap <= room) { brand = b; break; }
+  }
+  if (brand) blockH += brand.lh + brandGap;
+  const L = { logo, sub, btn, rbtn, brand };
   // en celular el bloque se apoya sobre las pacas para dejar libre la luna
-  L.logoY = COMPACT ? SHIELD_Y - 6 - blockH : Math.round((TOP + SHIELD_Y) / 2 - blockH / 2 - 6);
-  L.subY = L.logoY + logo.lh + 4;
+  L.brandY = COMPACT ? Math.max(top, SHIELD_Y - 6 - blockH) : Math.max(top, Math.round((TOP + SHIELD_Y) / 2 - blockH / 2 - 6));
+  L.logoY = L.brandY + (brand ? brand.lh + brandGap : 0);
+  L.subY = L.logoY + logo.lh + subGap;
   L.promptY = L.subY + sub.lh + gap;
-  L.merryY = L.subY + sub.lh + (COMPACT ? 5 : 9);
+  L.merryY = L.subY + sub.lh + (COMPACT ? 3 : 9);
   L.recY = L.promptY + recStep;
   L.balY = L.promptY + recH + recStep;
   const by = L.promptY + 7 + recH + balH + btnGap;
-  if (stack) btns.forEach((b, k) => { b.x = Math.round(W / 2 - b.w / 2); b.y = by + k * 17; });
+  if (stack) btns.forEach((b, k) => { b.x = Math.round(W / 2 - b.w / 2); b.y = by + k * stackStep; });
   else {
     let x = Math.round(W / 2 - (btns.reduce((a, b) => a + b.w, 0) + 6 * (btns.length - 1)) / 2);
     for (const b of btns) { b.x = x; b.y = by; x += b.w + 6; }
@@ -3036,6 +3176,7 @@ function titleLayout() {
 }
 function drawTitle() {
   const L = titleLayout(), lx = Math.round((W - L.logo.lw) / 2);
+  if (L.brand) blitLogo(L.brand, Math.round((W - L.brand.lw) / 2), L.brandY);
   blitLogo(L.logo, lx, L.logoY);
   blitLogo(L.sub, Math.round((W - L.sub.lw) / 2), L.subY);
   if (XMAS) {
@@ -3046,7 +3187,7 @@ function drawTitle() {
     ctx.rotate(-0.2);
     ctx.drawImage(SPR.hat, -5.5 * k, -5.5 * k, 11 * k, 7 * k);
     ctx.restore();
-    drawTextShadow(tr('merry'), W / 2, L.merryY, Math.floor(clock * 1.2) % 2 ? '#5bea6b' : '#ff6b5e', 1, 'center');
+    drawTextShadow(tr('merry'), W / 2, L.merryY, Math.floor(clock * 1.2) % 2 ? '#42bb5a' : '#ef2e32', 1, 'center');
   }
   if (!invite && !helpOpen && !langOpen) {
     ctx.globalAlpha = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(clock * 3.2));   // respira en vez de parpadear
@@ -3065,23 +3206,36 @@ function crmBalance() {
 }
 
 // Aviso con dos botones: invitación a instalar (celular, después de jugar) y continuar con vida extra
-function choiceLayout(headText, bodyText, bI, bL, headCol = PAL.y) {
+// side: alto del logo de la marca a cada lado del texto y los botones (0 = sin logos, o si no caben)
+function choiceLayout(headText, bodyText, bI, bL, headCol = PAL.y, side = 0) {
   const maxW = W - panelM() * 2 - 10;
+  const brand = side ? brandLogo(side) : null, gutter = brand ? Math.ceil(brand.lw) + 6 : 0;
+  const useBrand = brand && maxW - gutter * 2 >= 120;
+  const innerW = useBrand ? maxW - gutter * 2 : maxW;
   const hs = titleS(), head = wrapText(headText, hs, maxW);
-  const body = wrapText(bodyText, 1, maxW);
-  const stack = bI.w + bL.w + 6 > maxW;
-  const textH = head.length * lineH(hs) + 4 + body.length * lineH(1);
+  let body = wrapText(bodyText, 1, innerW);
+  // renglones parejos: se angosta mientras no salga un renglón más
+  for (let w = innerW - 6; body.length > 1 && w > 40; w -= 6) { const b = wrapText(bodyText, 1, w); if (b.length > body.length) break; body = b; }
+  const stack = bI.w + bL.w + 6 > innerW;
+  const headH = head.length * lineH(hs) + 4, textH = headH + body.length * lineH(1);
   const total = textH + 8 + (stack ? 30 : 13);
   const y0 = Math.round(CY - total / 2), by = y0 + textH + 8;
   if (stack) { bI.x = Math.round(W / 2 - bI.w / 2); bI.y = by; bL.x = Math.round(W / 2 - bL.w / 2); bL.y = by + 17; }
   else { const tw = bI.w + bL.w + 6; bI.x = Math.round(W / 2 - tw / 2); bL.x = bI.x + bI.w + 6; bI.y = bL.y = by; }
-  return { y0, total, hs, head, body, bI, bL, headCol };
+  const L = { y0, total, hs, head, body, bI, bL, headCol };
+  if (useBrand) {
+    // centrados junto al texto y los botones, en el espacio libre del panel
+    L.brand = brand;
+    L.brandY = Math.round(y0 + headH + (total - headH - brand.lh) / 2);
+    L.brandX = [panelM() + 5, W - panelM() - 5 - brand.lw];
+  }
+  return L;
 }
 const inviteLayout = () => choiceLayout(tr('liked'), tr('installBody'), uiBtn(tr('installBtn'), true), uiBtn(tr('notNow')));
 function continueLayout() {
   const n = CRM.extraLives;
   return choiceLayout(tr('noTrucks'), n ? (n === 1 ? tr('haveLife') : tr('haveLives', n)) : tr('watchBody'),
-    uiBtn(n ? tr('useLife') : tr('watch'), SPR.star), uiBtn(tr('noThanks')), PAL.r);
+    uiBtn(n ? tr('useLife') : tr('watch'), SPR.star), uiBtn(tr('noThanks')), PAL.r, 20);
 }
 function drawChoice(L) {
   drawPanel(L.y0 - 9, L.y0 + L.total + 9);
@@ -3089,6 +3243,7 @@ function drawChoice(L) {
   for (const l of L.head) { drawTextShadow(l, W / 2, y, L.headCol, L.hs, 'center'); y += lineH(L.hs); }
   y += 4;
   for (const l of L.body) { drawTextShadow(l, W / 2, y, PAL.w, 1, 'center'); y += lineH(1); }
+  if (L.brand) for (const x of L.brandX) blitLogo(L.brand, Math.round(x), L.brandY);
   drawUIButton(L.bI, true);
   drawUIButton(L.bL, false);
 }
@@ -3118,7 +3273,7 @@ function drawLangPicker() {
   drawTextShadow(tr('language'), W / 2, L.y0, PAL.y, titleS(), 'center');
   L.rows.forEach((r, i) => {
     const cur = r.code === lang;
-    if (cur || i === langSel) roundRect(r.x, r.y, r.w, r.h, cur ? '#1f5fd1' : '#16307a');
+    if (cur || i === langSel) roundRect(r.x, r.y, r.w, r.h, cur ? '#3d7bc7' : '#1b65b6');
     drawTextShadow(LANG_NAMES[r.code], W / 2, r.y + 1.5, cur ? PAL.w : '#9ccaff', 1, 'center');
   });
 }
@@ -3159,7 +3314,7 @@ function gameOverItems() {
     // tarjeta de resultados: solo lo esencial, con los puntos en grande
     const items = [[tr('gameOver'), titleS(), PAL.r]];
     if (gameOverReason) items.push([trc(gameOverReason), 1, PAL.y]);
-    items.push([tr('score'), 1, '#7fb2ff'], [pad(score), 1.5, PAL.w], [tr('wave', level), 1, '#9fe39f']);
+    items.push([tr('score'), 1, '#3d7bc7'], [pad(score), 1.5, PAL.w], [tr('wave', level), 1, '#42bb5a']);
     if (newRecord) items.push([tr('newRec'), 1, PAL.c, blinkRec]);
     if (save) items.push([tr('saveScore'), 1, '#ff8f86']);
     items.push([trc('tapCont'), 1, PAL.y, blinkGo]);
@@ -3167,7 +3322,7 @@ function gameOverItems() {
   }
   const items = [[tr('gameOver'), 2, PAL.r]];
   if (gameOverReason) items.push([tr(gameOverReason), 1, PAL.y]);
-  items.push([tr('score') + ' ' + pad(score), 1, PAL.w], [tr('cowsSafe', cowsLeft()), 1, '#9fe39f']);
+  items.push([tr('score') + ' ' + pad(score), 1, PAL.w], [tr('cowsSafe', cowsLeft()), 1, '#42bb5a']);
   if (newRecord) items.push([tr('newRecWave', level), 1, PAL.c, blinkRec]);
   if (save) items.push([tr('saveScore'), 1, '#ff8f86']);
   items.push([touchMode ? tr('tapCont') : tr('enterCont'), 1, PAL.y, blinkGo]);
@@ -3201,7 +3356,7 @@ function drawBanner() {
     // franja de un renglón: arriba de las pacas, o bajo el marcador durante el ataque final
     const ts = titleS(), big = wrapText(banner.text, ts, VW - 6), small = wrapText(banner.sub, 1, VW - 6);
     const h = big.length * lineH(ts) + small.length * lineH(1) + 6;
-    const y0 = raid ? 13 : SHIELD_Y - h - 3;
+    const y0 = raid ? TOP - 1 : SHIELD_Y - h - 3;
     ctx.globalAlpha = Math.min(1, banner.t / 0.4);   // se desvanece al final
     ctx.fillStyle = 'rgba(4,8,24,0.75)';
     ctx.fillRect(-OX, y0, VW, h);
@@ -3250,9 +3405,9 @@ function drawDeck() {
   for (const b of deckBtns) {
     const on = b.id === 'pause' ? paused : b.id === 'mute' ? false : held(b.id);
     const fireB = b.id === 'fire', small = b.id === 'pause' || b.id === 'mute';
-    const face = fireB ? (on ? '#ff5a4e' : '#d03a33') : (on ? '#1f5fd1' : '#16307a');
-    const edge = fireB ? '#6e1514' : '#06123a';
-    const light = fireB ? '#ff8f86' : '#4b84ef';
+    const face = fireB ? (on ? '#ff5559' : '#ef2e32') : (on ? '#3d7bc7' : '#1b65b6');
+    const edge = fireB ? '#8c1216' : '#06123a';
+    const light = fireB ? '#ff8f86' : '#3d7bc7';
     const depth = small ? 1 : 2, dy = on ? depth : 0, r = small ? 0.5 : 1.5;
     if (!on) roundRect(b.x, b.y + depth, b.w, b.h, edge, r);
     roundRect(b.x, b.y + dy, b.w, b.h, '#050a1f', r);
@@ -3268,7 +3423,7 @@ function drawDeck() {
         ctx.fillRect(snap(xx), snap(cy - hh), 0.5, Math.max(0.5, snap(hh * 2)));
       }
     } else if (b.id === 'fire') {
-      drawTextShadow(tr('fire'), cx, Math.round(cy - 3.5), PAL.w, 1, 'center', '#6e1514');
+      drawTextShadow(tr('fire'), cx, Math.round(cy - 3.5), PAL.w, 1, 'center', '#8c1216');
     } else if (b.id === 'pause') drawIconPause(cx, cy, 2.5);
     else drawIconSound(cx, cy);
   }
@@ -3327,6 +3482,7 @@ const tk = { left: false, right: false, fire: false };   // táctil
 const KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', Space: 'fire', ArrowUp: 'fire', KeyW: 'fire' };
 
 addEventListener('keydown', e => {
+  if (window.VaquitasLoader?.busy) return;   // pantalla de carga
   if (CRM && CRM.busy) return;     // el overlay de premios (video, registro) tiene el teclado
   AudioSys.init();
   const k = KEYMAP[e.code];
