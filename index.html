@@ -2,6 +2,29 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
+<!-- Google Analytics -->
+<script>
+  (() => {
+    const { hostname, origin, pathname } = window.location;
+    if (hostname !== 'monoceros.io' && !hostname.endsWith('.monoceros.io')) return;
+
+    const measurementId = 'G-ERGR43PNQX';
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function gtag() { window.dataLayer.push(arguments); };
+    window.gtag('js', new Date());
+    window.gtag('config', measurementId, {
+      allow_google_signals: false,
+      allow_ad_personalization_signals: false,
+      page_location: origin + pathname,
+      page_referrer: document.referrer ? new URL(document.referrer).origin : '',
+    });
+
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = 'https://www.googletagmanager.com/gtag/js?id=' + measurementId;
+    document.head.appendChild(script);
+  })();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#040818">
 <title>Vaquitas Abducidas</title>
