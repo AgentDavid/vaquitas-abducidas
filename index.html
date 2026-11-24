@@ -23,6 +23,11 @@
     script.async = true;
     script.src = 'https://www.googletagmanager.com/gtag/js?id=' + measurementId;
     document.head.appendChild(script);
+
+    const contentsquareTag = document.createElement('script');
+    contentsquareTag.async = true;
+    contentsquareTag.src = 'https://t.contentsquare.net/uxa/eb0a7f89f7259.js';
+    document.head.appendChild(contentsquareTag);
   })();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
